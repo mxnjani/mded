@@ -135,7 +135,7 @@ export default function App() {
   useEffect(() => {
     let titleStr: string;
     if (isMdvaultMode) {
-      titleStr = isDirty ? `[mdVault - ${fileName}]*` : `[mdVault - ${fileName}]`;
+      titleStr = isDirty ? `mdED [mdVault - ${fileName}]*` : `mdED [mdVault - ${fileName}]`;
     } else {
       titleStr = isDirty ? `mdED [${fileName}]*` : `mdED [${fileName}]`;
     }
