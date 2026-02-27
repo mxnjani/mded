@@ -66,5 +66,15 @@ export function useHistory({ onRestore }: UseHistoryOptions) {
         }
     }, [onRestore]);
 
-    return { push, undo, redo, nextCursorRef };
+    const reset = useCallback((value: string) => {
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+            debounceTimerRef.current = null;
+        }
+        historyRef.current = [{ value, cursor: 0 }];
+        historyIndexRef.current = 0;
+        nextCursorRef.current = null;
+    }, []);
+
+    return { push, undo, redo, reset, nextCursorRef };
 }

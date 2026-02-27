@@ -55,39 +55,30 @@ export default function App() {
     insertText(before, after, pushToHistory, nextCursorRef);
   };
 
-  // Keep a ref to isDirty for event handlers that capture stale closures
   const isDirtyRef = useRef(isDirty);
   useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
 
-  // Deferred markdown for preview to avoid blocking editor input
   const deferredMarkdown = useDeferredValue(markdown);
 
-  // Show window after React has fully rendered (eliminates white flash)
   useEffect(() => {
     if (window.__TAURI_INTERNALS__) {
       getCurrentWindow().show();
     }
   }, []);
 
-  // Formatting shortcuts with history support
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Disable Tab traversal globally (including in editor)
       if (e.key === 'Tab') {
         e.preventDefault();
       }
 
-      // Disable native shortcuts in production
       if (!import.meta.env.DEV) {
-        // Prevent Print (Ctrl+P / Cmd+P)
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
           e.preventDefault();
         }
-        // Prevent Search (Ctrl+F / Cmd+F)
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
           e.preventDefault();
         }
-        // Prevent Inspect Element (F12 or Ctrl+Shift+I / Cmd+Option+I)
         if (
           e.key === 'F12' ||
           (e.shiftKey && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i')
@@ -126,10 +117,8 @@ export default function App() {
       }
     };
 
-    // Use capture phase to ensure we intercept before other handlers
     window.addEventListener('keydown', handleKeyDown, { capture: true });
 
-    // Also disable context menu (right click) in production
     const handleContextMenu = (e: MouseEvent) => {
       if (!import.meta.env.DEV) {
         e.preventDefault();
@@ -157,22 +146,20 @@ export default function App() {
     }
   }, [fileName, isDirty, isMdvaultMode]);
 
-  // Close confirmation
   useEffect(() => {
     if (window.__TAURI_INTERNALS__) {
-      // Tauri native: listen for the close-requested event emitted from Rust
-      let unlisten: (() => void) | undefined;
-      listen('close-requested', async () => {
+      const unlistenPromise = listen('close-requested', async () => {
         if (isDirtyRef.current) {
           setShowCloseConfirm(true);
         } else {
           await invoke('close_app');
         }
-      }).then(fn => { unlisten = fn; });
+      });
 
-      return () => { unlisten?.(); };
+      return () => {
+        unlistenPromise.then(unlisten => unlisten());
+      };
     } else {
-      // Web fallback: browser beforeunload
       const handleBeforeUnload = (e: BeforeUnloadEvent) => {
         if (isDirtyRef.current) {
           e.preventDefault();
@@ -262,7 +249,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Close Confirmation */}
       <ConfirmDialog
         isOpen={showCloseConfirm}
         title="Unsaved Changes"
@@ -277,7 +263,6 @@ export default function App() {
         onCancel={() => setShowCloseConfirm(false)}
       />
 
-      {/* New File Confirmation */}
       <ConfirmDialog
         isOpen={showNewFileConfirm}
         title="New File"

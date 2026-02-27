@@ -30,3 +30,4 @@
   ; Broadcast environment change
   SendMessage 0xFFFF 0x001A 0 "STR:Environment" /TIMEOUT=5000
 !macroend
+

@@ -12,7 +12,6 @@ interface EditorProps {
 }
 
 export const Editor = React.memo(function Editor({ markdown, setMarkdown, editorRef, pushToHistory, undo, redo, nextCursorRef }: EditorProps) {
-    // Apply queued cursor position after every render
     useLayoutEffect(() => {
         if (nextCursorRef.current !== null && editorRef.current) {
             const scrollTop = editorRef.current.scrollTop;
@@ -61,7 +60,6 @@ export const Editor = React.memo(function Editor({ markdown, setMarkdown, editor
             return;
         }
 
-        // Smart list continuation
         if (e.key === 'Enter') {
             const { selectionStart, value } = textarea;
 
@@ -76,7 +74,6 @@ export const Editor = React.memo(function Editor({ markdown, setMarkdown, editor
 
                 e.preventDefault();
 
-                // Empty list item → break out of list
                 if (lineContent.trim() === '') {
                     const newValue = value.substring(0, lineStart) + '\n' + value.substring(selectionStart);
                     nextCursorRef.current = lineStart + 1;
@@ -85,7 +82,6 @@ export const Editor = React.memo(function Editor({ markdown, setMarkdown, editor
                     return;
                 }
 
-                // Continue the list
                 let prefix: string;
                 if (orderedMatch) {
                     const indent = orderedMatch[1];
@@ -117,7 +113,6 @@ export const Editor = React.memo(function Editor({ markdown, setMarkdown, editor
                 className="flex-1 w-full pt-12 px-12 pb-[40vh] resize-none focus:outline-none font-mono text-[15px] leading-[1.7] tracking-[0.01em] bg-transparent m-0 whitespace-pre-wrap cursor-auto"
                 spellCheck={false}
             />
-            {/* Scroll Buttons */}
             <div className="absolute bottom-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                     onMouseDown={e => e.preventDefault()}

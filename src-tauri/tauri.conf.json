@@ -31,7 +31,8 @@
       "nsis": {
         "installMode": "both",
         "displayLanguageSelector": true,
-        "installerHooks": "windows/installer_hooks.nsh"
+        "installerHooks": "windows/installer_hooks.nsh",
+        "template": "windows/installer.nsi"
       }
     },
     "fileAssociations": [

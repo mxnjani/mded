@@ -4,6 +4,7 @@ import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useHistory } from './useHistory';
 
 export type ViewMode = 'editor' | 'split' | 'preview';
 
@@ -47,27 +48,32 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         return false;
     });
 
-    // Persistence: load once on mount (CLI file takes priority over localStorage cache)
+    const { push: pushToHistory, undo, redo, reset: resetHistory, nextCursorRef } = useHistory({
+        onRestore: (md) => {
+            setMarkdown(md);
+            setIsDirty(true);
+        },
+    });
+
     useEffect(() => {
         const init = async () => {
-            // Check how the app was launched
             if (window.__TAURI_INTERNALS__) {
                 try {
                     const launchInfo = await invoke<LaunchInfo>('get_launch_info');
 
                     if (launchInfo.source === 'mdvault' && launchInfo.file_path) {
-                        // mdvault mode: load file using UUID path
                         const content = await readTextFile(launchInfo.file_path);
                         setMarkdown(content);
+                        resetHistory(content);
                         if (launchInfo.file_name) setFileName(launchInfo.file_name);
                         setFilePath(launchInfo.file_path);
                         setIsMdvaultMode(true);
                         setIsDirty(false);
                         return;
                     } else if (launchInfo.file_path) {
-                        // Standalone file-association launch
                         const content = await readTextFile(launchInfo.file_path);
                         setMarkdown(content);
+                        resetHistory(content);
                         const name = launchInfo.file_path.split(/[/\\]/).pop();
                         if (name) setFileName(name);
                         setFilePath(launchInfo.file_path);
@@ -79,12 +85,14 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 }
             }
 
-            // Fallback: restore from localStorage
             const saved = localStorage.getItem('mded_content');
             const savedName = localStorage.getItem('mded_filename');
             const savedMode = localStorage.getItem('mded_viewmode') as ViewMode;
             const savedDirty = localStorage.getItem('mded_isdirty') === 'true';
-            if (saved) setMarkdown(saved);
+            if (saved) {
+                setMarkdown(saved);
+                resetHistory(saved);
+            }
             if (savedName) setFileName(savedName);
             if (savedMode) setViewMode(savedMode);
             setIsDirty(savedDirty);
@@ -93,7 +101,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         init();
     }, []);
 
-    // Persistence: save on change
     useEffect(() => {
         localStorage.setItem('mded_content', markdown);
         localStorage.setItem('mded_filename', fileName);
@@ -136,7 +143,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
     }, [editorRef]);
 
     const handleSaveAs = useCallback(async () => {
-        if (isMdvaultMode) return; // Disabled in mdvault mode
+        if (isMdvaultMode) return;
         if (window.__TAURI_INTERNALS__) {
             try {
                 const savePath = await save({
@@ -178,7 +185,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             } catch (writeErr) {
                 console.error("Failed to quick save:", writeErr);
                 alert(`Save failed: ${writeErr}`);
-                if (!isMdvaultMode) handleSaveAs(); // Fallback only in standalone
+                if (!isMdvaultMode) handleSaveAs();
             }
         } else {
             if (!isMdvaultMode) handleSaveAs();
@@ -186,38 +193,41 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
     }, [markdown, filePath, handleSaveAs, isMdvaultMode]);
 
     const handleNewFile = useCallback(() => {
-        if (isMdvaultMode) return; // Disabled in mdvault mode
+        if (isMdvaultMode) return;
         if (isDirty) {
             setShowNewFileConfirm(true);
         } else {
             setMarkdown(DEFAULT_MARKDOWN);
+            resetHistory(DEFAULT_MARKDOWN);
             setFileName('untitled.md');
             setFilePath(null);
             setIsDirty(false);
         }
-    }, [isDirty, isMdvaultMode]);
+    }, [isDirty, isMdvaultMode, resetHistory]);
 
     const confirmNewFile = useCallback(() => {
         setMarkdown(DEFAULT_MARKDOWN);
+        resetHistory(DEFAULT_MARKDOWN);
         setFileName('untitled.md');
         setFilePath(null);
         setIsDirty(false);
         setShowNewFileConfirm(false);
-    }, []);
+    }, [resetHistory]);
 
     const loadFile = useCallback((file: File) => {
         const reader = new FileReader();
         reader.onload = (event) => {
             const content = event.target?.result as string;
             setMarkdown(content);
+            resetHistory(content);
             setFileName(file.name);
             setIsDirty(false);
         };
         reader.readAsText(file);
-    }, []);
+    }, [resetHistory]);
 
     const handleFileOpen = useCallback(async (e?: React.ChangeEvent<HTMLInputElement>) => {
-        if (isMdvaultMode) return; // Disabled in mdvault mode
+        if (isMdvaultMode) return;
         if (window.__TAURI_INTERNALS__) {
             try {
                 const selected = await open({
@@ -226,11 +236,11 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 });
 
                 if (selected === null) {
-                    // user cancelled the selection
                 } else {
                     const filePath = Array.isArray(selected) ? selected[0] : selected;
                     const content = await readTextFile(filePath);
                     setMarkdown(content);
+                    resetHistory(content);
                     const newFileName = filePath.split(/[/\\]/).pop();
                     if (newFileName) setFileName(newFileName);
                     setFilePath(filePath);
@@ -240,7 +250,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 console.error("Failed to open file", err);
             }
         } else {
-            // Web fallback
             const file = e?.target?.files?.[0];
             if (!file) return;
             loadFile(file);
@@ -252,23 +261,22 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
-        if (isMdvaultMode) return; // Block file drop in mdvault mode
+        if (isMdvaultMode) return;
         const file = e.dataTransfer.files[0];
         if (file && (file.name.endsWith('.md') || file.name.endsWith('.markdown') || file.name.endsWith('.txt'))) {
             loadFile(file);
         }
     }, [loadFile, isMdvaultMode]);
 
-    // Handle files opened via OS double-click (file associations)
     useEffect(() => {
         if (!window.__TAURI_INTERNALS__) return;
-        let unlisten: (() => void) | undefined;
 
-        listen<string>('open-file', async (event) => {
+        const unlistenPromise = listen<string>('open-file', async (event) => {
             const filePath = event.payload;
             try {
                 const content = await readTextFile(filePath);
                 setMarkdown(content);
+                resetHistory(content);
                 const newFileName = filePath.split(/[/\\]/).pop();
                 if (newFileName) setFileName(newFileName);
                 setFilePath(filePath);
@@ -276,12 +284,13 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             } catch (err) {
                 console.error("Failed to read opened file:", err);
             }
-        }).then(un => { unlisten = un; });
+        });
 
-        return () => { unlisten?.(); };
+        return () => {
+            unlistenPromise.then(unlisten => unlisten());
+        };
     }, []);
 
-    // Keyboard Shortcuts — must be declared after all handlers
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.metaKey || e.ctrlKey) {
@@ -316,7 +325,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                         break;
                 }
             }
-            // F11 - Fullscreen toggle
             if (e.key === 'F11') {
                 e.preventDefault();
                 setIsFullscreen(!isFullscreen);
@@ -352,5 +360,9 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         handleSaveAs,
         insertText,
         isMdvaultMode,
+        pushToHistory,
+        undo,
+        redo,
+        nextCursorRef,
     };
 }

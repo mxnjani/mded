@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import remarkBreaks from 'remark-breaks';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,11 +11,9 @@ import { ArrowUp, ArrowDown } from 'lucide-react';
 import { FloatingToc } from './FloatingToc';
 import 'katex/dist/katex.min.css';
 
-// Module-level constants to avoid re-creating on every render
-const REMARK_PLUGINS = [remarkGfm, remarkMath];
-const REHYPE_PLUGINS = [rehypeRaw, rehypeKatex];
 
-// --- Heading ID helpers ---
+const REMARK_PLUGINS = [remarkGfm, remarkMath, remarkBreaks];
+const REHYPE_PLUGINS = [rehypeRaw, rehypeKatex];
 
 function getTextContent(node: React.ReactNode): string {
     if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -33,7 +32,7 @@ function slugify(text: string): string {
         .replace(/^-+|-+$/g, '');
 }
 
-// Code block component (stable reference)
+
 function CodeComponent({ node, inline, className, children, ...props }: any) {
     const match = /language-(\w+)/.exec(className || '');
     return match ? (
@@ -60,10 +59,8 @@ interface PreviewProps {
 export const Preview = React.memo(function Preview({ markdown, previewRef }: PreviewProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Slug counter ref — reset before each render, shared by all heading components
     const slugCountRef = useRef(new Map<string, number>());
 
-    // Create heading components once (stable identity). They read slugCountRef at render time.
     const mdComponents = useMemo(() => {
         function makeHeading(Tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') {
             return function Heading({ children, node, ...props }: any) {
@@ -85,9 +82,8 @@ export const Preview = React.memo(function Preview({ markdown, previewRef }: Pre
             h5: makeHeading('h5'),
             h6: makeHeading('h6'),
         };
-    }, []); // ← stable: created once, never recreated
+    }, []);
 
-    // Reset slug counters before ReactMarkdown renders
     slugCountRef.current.clear();
 
     const scrollToTop = () => {
@@ -104,7 +100,6 @@ export const Preview = React.memo(function Preview({ markdown, previewRef }: Pre
 
     return (
         <div className="flex-1 bg-bg relative group">
-            {/* Scrollable content */}
             <div ref={containerRef} className="absolute inset-0 overflow-y-auto">
                 <div ref={previewRef} className="pt-12 px-12 pb-[40vh] markdown-body">
                     <ReactMarkdown
@@ -117,14 +112,12 @@ export const Preview = React.memo(function Preview({ markdown, previewRef }: Pre
                 </div>
             </div>
 
-            {/* Floating Table of Contents — stays fixed while content scrolls */}
             <FloatingToc
                 markdown={markdown}
                 previewRef={previewRef}
                 containerRef={containerRef}
             />
 
-            {/* Scroll Buttons */}
             <div className="absolute bottom-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                     onClick={scrollToTop}
