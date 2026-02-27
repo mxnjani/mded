@@ -25,7 +25,7 @@
 
   ; Use PowerShell to cleanly remove $INSTDIR from PATH
   ; This avoids needing any NSIS string-manipulation plugins
-  nsExec::ExecToLog 'powershell.exe -NoProfile -Command "& { $$p = [Environment]::GetEnvironmentVariable(''Path'',''User''); if ($$p) { $$parts = $$p -split '';'' | Where-Object { $$_ -ne ''$INSTDIR'' -and $$_ -ne '''' }; [Environment]::SetEnvironmentVariable(''Path'', ($$parts -join '';''), ''User'') } }"'
+  nsExec::ExecToLog `powershell.exe -NoProfile -Command "& { $$p = [Environment]::GetEnvironmentVariable('Path','User'); if ($$p) { $$parts = $$p -split ';' | Where-Object { $$_ -ne '$INSTDIR' -and $$_ -ne '' }; [Environment]::SetEnvironmentVariable('Path', ($$parts -join ';'), 'User') } }"`
 
   ; Broadcast environment change
   SendMessage 0xFFFF 0x001A 0 "STR:Environment" /TIMEOUT=5000
