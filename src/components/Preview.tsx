@@ -1,20 +1,148 @@
-import React from 'react';
+import React, { useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { ArrowUp, ArrowDown } from 'lucide-react';
+import { FloatingToc } from './FloatingToc';
+import 'katex/dist/katex.min.css';
+
+// Module-level constants to avoid re-creating on every render
+const REMARK_PLUGINS = [remarkGfm, remarkMath];
+const REHYPE_PLUGINS = [rehypeRaw, rehypeKatex];
+
+// --- Heading ID helpers ---
+
+function getTextContent(node: React.ReactNode): string {
+    if (typeof node === 'string' || typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(getTextContent).join('');
+    if (node && typeof node === 'object' && 'props' in node) {
+        return getTextContent((node as any).props.children);
+    }
+    return '';
+}
+
+function slugify(text: string): string {
+    return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+// Code block component (stable reference)
+function CodeComponent({ node, inline, className, children, ...props }: any) {
+    const match = /language-(\w+)/.exec(className || '');
+    return match ? (
+        <SyntaxHighlighter
+            style={vscDarkPlus as any}
+            language={match[1]}
+            PreTag="div"
+            customStyle={{ margin: 0 }}
+        >
+            {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
+    ) : (
+        <code className={className} {...props}>
+            {children}
+        </code>
+    );
+}
 
 interface PreviewProps {
     markdown: string;
     previewRef: React.RefObject<HTMLDivElement | null>;
 }
 
-export function Preview({ markdown, previewRef }: PreviewProps) {
+export const Preview = React.memo(function Preview({ markdown, previewRef }: PreviewProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Slug counter ref — reset before each render, shared by all heading components
+    const slugCountRef = useRef(new Map<string, number>());
+
+    // Create heading components once (stable identity). They read slugCountRef at render time.
+    const mdComponents = useMemo(() => {
+        function makeHeading(Tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') {
+            return function Heading({ children, node, ...props }: any) {
+                const text = getTextContent(children);
+                const base = slugify(text) || 'heading';
+                const count = slugCountRef.current.get(base) ?? 0;
+                slugCountRef.current.set(base, count + 1);
+                const id = count > 0 ? `${base}-${count}` : base;
+                return <Tag id={id} {...props}>{children}</Tag>;
+            };
+        }
+
+        return {
+            code: CodeComponent,
+            h1: makeHeading('h1'),
+            h2: makeHeading('h2'),
+            h3: makeHeading('h3'),
+            h4: makeHeading('h4'),
+            h5: makeHeading('h5'),
+            h6: makeHeading('h6'),
+        };
+    }, []); // ← stable: created once, never recreated
+
+    // Reset slug counters before ReactMarkdown renders
+    slugCountRef.current.clear();
+
+    const scrollToTop = () => {
+        if (containerRef.current) {
+            containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const scrollToBottom = () => {
+        if (containerRef.current) {
+            containerRef.current.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+        }
+    };
+
     return (
-        <div className="flex-1 bg-bg overflow-y-auto">
-            <div ref={previewRef} className="max-w-2xl mx-auto p-10 markdown-body">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {markdown}
-                </ReactMarkdown>
+        <div className="flex-1 bg-bg relative group">
+            {/* Scrollable content */}
+            <div ref={containerRef} className="absolute inset-0 overflow-y-auto">
+                <div ref={previewRef} className="pt-12 px-12 pb-[40vh] markdown-body">
+                    <ReactMarkdown
+                        remarkPlugins={REMARK_PLUGINS}
+                        rehypePlugins={REHYPE_PLUGINS}
+                        components={mdComponents}
+                    >
+                        {markdown}
+                    </ReactMarkdown>
+                </div>
+            </div>
+
+            {/* Floating Table of Contents — stays fixed while content scrolls */}
+            <FloatingToc
+                markdown={markdown}
+                previewRef={previewRef}
+                containerRef={containerRef}
+            />
+
+            {/* Scroll Buttons */}
+            <div className="absolute bottom-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button
+                    onClick={scrollToTop}
+                    className="p-1.5 rounded-full bg-border/40 hover:bg-border/80 text-accent backdrop-blur-sm transition-colors cursor-pointer shadow-sm"
+                    style={{ position: 'fixed', bottom: '60px', right: '24px' }}
+                    title="Scroll to Top"
+                >
+                    <ArrowUp size={16} />
+                </button>
+                <button
+                    onClick={scrollToBottom}
+                    className="p-1.5 rounded-full bg-border/40 hover:bg-border/80 text-accent backdrop-blur-sm transition-colors cursor-pointer shadow-sm"
+                    style={{ position: 'fixed', bottom: '24px', right: '24px' }}
+                    title="Scroll to Bottom"
+                >
+                    <ArrowDown size={16} />
+                </button>
             </div>
         </div>
     );
-}
+});

@@ -1,0 +1,123 @@
+/* ===================================================
+   Floating Table of Contents Plugin
+   Self-contained styles — safe to delete entirely.
+   Uses existing CSS variables for theme consistency.
+   =================================================== */
+
+.floating-toc-trigger {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
+    background: var(--color-bg);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s;
+    opacity: 0.6;
+}
+
+.floating-toc-trigger:hover {
+    opacity: 1;
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.floating-toc-trigger.active {
+    opacity: 1;
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: var(--color-editor-bg);
+    border-width: 1.5px;
+}
+
+/* ---------- Panel ---------- */
+
+.floating-toc-panel {
+    position: absolute;
+    top: 56px;
+    right: 16px;
+    z-index: 20;
+    width: 260px;
+    max-height: calc(100% - 80px);
+    overflow-y: auto;
+    border: 1.5px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+    border-radius: 8px;
+    background: var(--color-bg);
+    padding: 8px 0;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+
+    /* Animate in/out */
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.floating-toc-panel.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+/* ---------- Items ---------- */
+
+.floating-toc-title {
+    padding: 4px 14px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+    user-select: none;
+}
+
+.floating-toc-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 5px 14px;
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: color 0.12s, background-color 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-sans);
+}
+
+.floating-toc-item:hover {
+    color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+/* Indent levels */
+.floating-toc-item[data-level="2"] {
+    padding-left: 28px;
+}
+
+.floating-toc-item[data-level="3"] {
+    padding-left: 42px;
+}
+
+.floating-toc-item[data-level="4"] {
+    padding-left: 56px;
+}
+
+.floating-toc-item[data-level="5"] {
+    padding-left: 70px;
+}
+
+.floating-toc-item[data-level="6"] {
+    padding-left: 84px;
+}

@@ -1,0 +1,87 @@
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::Emitter;
+
+/// Once set to true, the next CloseRequested event will proceed without interception.
+static CLOSE_ALLOWED: AtomicBool = AtomicBool::new(false);
+
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
+
+/// Called by the frontend to actually close the app (after user confirms or doc is clean).
+#[tauri::command]
+fn close_app(window: tauri::Window) {
+    CLOSE_ALLOWED.store(true, Ordering::SeqCst);
+    let _ = window.close();
+}
+
+/// Structured info about how the app was launched.
+#[derive(serde::Serialize)]
+struct LaunchInfo {
+    source: String,
+    file_name: Option<String>,
+    file_uuid: Option<String>,
+    file_path: Option<String>,
+}
+
+/// Returns launch info: detects mdvault mode or standalone file-association launch.
+/// mdvault format: mded.exe mdvault "<filename>" "<uuid>" "<filepath>"
+#[tauri::command]
+fn get_launch_info() -> LaunchInfo {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.get(1).map(|s| s.as_str()) == Some("mdvault") {
+        LaunchInfo {
+            source: "mdvault".into(),
+            file_name: args.get(2).cloned(),
+            file_uuid: args.get(3).cloned(),
+            file_path: args.get(4).cloned(),
+        }
+    } else {
+        // Existing: file-association launch (args[1] is a .md path)
+        let file_path = args.get(1)
+            .filter(|p| {
+                let lower = p.to_lowercase();
+                lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".txt")
+            })
+            .cloned();
+        LaunchInfo {
+            source: "standalone".into(),
+            file_name: None,
+            file_uuid: None,
+            file_path,
+        }
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if let Some(file_path) = args.get(1) {
+                let _ = app.emit("open-file", file_path);
+            }
+        }))
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![greet, close_app, get_launch_info])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // If a previous confirmation already allowed close, let it through.
+                if CLOSE_ALLOWED.load(Ordering::SeqCst) {
+                    return;
+                }
+
+                // Prevent close and ask the frontend to confirm
+                api.prevent_close();
+                let _ = window.emit("close-requested", ());
+            }
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

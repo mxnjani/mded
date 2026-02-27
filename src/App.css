@@ -1,0 +1,242 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-bg: #ffffff;
+  --color-editor-bg: #fafafa;
+  --color-border: #e2e8f0;
+  --color-accent: #0f172a;
+  --color-muted: #64748b;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --color-scrollbar-hover: #a3a3a3;
+  --color-scrollbar: #d4d4d4;
+}
+
+.dark {
+  --color-bg: #0a0a0a;
+  --color-editor-bg: #171717;
+  --color-border: #333333;
+  --color-accent: #e5e5e5;
+  --color-muted: #d4d4d4;
+  --color-scrollbar-hover: #525252;
+  --color-scrollbar: #333333;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-accent);
+}
+
+/* Remove ugly default browser focus outlines globally for clicking */
+*:focus {
+  outline: none !important;
+}
+
+/* Let the editor textarea handle its own focus natively if needed, though Tailwind does this too */
+textarea:focus {
+  outline: none !important;
+  /* Rely entirely on custom styling/cursor */
+}
+
+.markdown-body {
+  font-family: var(--font-sans);
+  color: var(--color-accent);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.markdown-body> :first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body> :last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdown-body h1 {
+  font-size: 2em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown-body h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown-body h3 {
+  font-size: 1.25em;
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre,
+.markdown-body details {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.markdown-body a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body ul {
+  padding-left: 2em;
+  list-style-type: disc;
+}
+
+.markdown-body ol {
+  padding-left: 2em;
+  list-style-type: decimal;
+}
+
+.markdown-body ul ul,
+.markdown-body ul ol,
+.markdown-body ol ul,
+.markdown-body ol ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-body ul ul,
+.markdown-body ol ul {
+  list-style-type: circle;
+}
+
+.markdown-body ul ul ul,
+.markdown-body ul ol ul,
+.markdown-body ol ul ul,
+.markdown-body ol ol ul {
+  list-style-type: square;
+}
+
+.markdown-body blockquote {
+  padding: 0 1em;
+  color: var(--color-muted);
+  border-left: 0.25em solid var(--color-border);
+}
+
+.markdown-body code:not(pre code) {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: var(--color-border);
+  color: var(--color-accent);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.markdown-body pre {
+  margin-top: 0;
+  margin-bottom: 16px;
+  overflow: hidden;
+  font-size: 85%;
+  line-height: 1.45;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-body pre>code {
+  display: block;
+  padding: 16px;
+  background-color: var(--color-editor-bg);
+  overflow-x: auto;
+  border: 0;
+  color: var(--color-accent);
+}
+
+.markdown-body table {
+  display: block;
+  width: 100%;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 13px;
+  border: 1px solid var(--color-border);
+}
+
+.markdown-body table tr {
+  background-color: transparent;
+  border-top: 1px solid var(--color-border);
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: var(--color-editor-bg);
+}
+
+.markdown-body hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--color-border);
+  border: 0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  cursor: default;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-hover);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
