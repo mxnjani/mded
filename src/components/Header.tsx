@@ -7,6 +7,7 @@ import {
 import { ToolbarButton } from './ToolbarButton';
 import { ViewMode } from '../hooks/useMarkdownEditor';
 import { insertCodeBlock } from '../utils';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 interface HeaderProps {
     handleNewFile: () => void;
@@ -127,10 +128,7 @@ export function Header({
                             setIsFullscreen(!isFullscreen);
                             // Tauri full-screen support
                             if (window.__TAURI_INTERNALS__) {
-                                import('@tauri-apps/api/window').then(module => {
-                                    const getCurrentWindow = module.getCurrentWindow;
-                                    getCurrentWindow().setFullscreen(!isFullscreen);
-                                }).catch(e => console.error(e));
+                                getCurrentWindow().setFullscreen(!isFullscreen).catch(e => console.error(e));
                             }
                         }}
                         icon={isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}

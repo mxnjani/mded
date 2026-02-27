@@ -9,7 +9,6 @@ import { Header } from './components/Header';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
 import { useMarkdownEditor } from './hooks/useMarkdownEditor';
-import { useHistory } from './hooks/useHistory';
 import { cn, insertCodeBlock } from './utils';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -44,12 +43,12 @@ export default function App() {
     handleSaveAs,
     insertText,
     isDirty,
-    isMdvaultMode
+    isMdvaultMode,
+    pushToHistory,
+    undo,
+    redo,
+    nextCursorRef,
   } = useMarkdownEditor(editorRef);
-
-  const { push: pushToHistory, undo, redo, nextCursorRef } = useHistory({
-    onRestore: setMarkdown,
-  });
 
   // Wrap insertText to pass history functions
   const insertTextWithHistory = (before: string, after: string = '') => {
