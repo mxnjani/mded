@@ -15,7 +15,8 @@
         "title": "mdED",
         "width": 800,
         "height": 600,
-        "visible": false
+        "visible": false,
+        "maximized": true
       }
     ],
     "security": {

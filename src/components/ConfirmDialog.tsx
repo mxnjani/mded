@@ -26,8 +26,8 @@ export function ConfirmDialog({
         : 'bg-accent/10 text-accent hover:bg-accent/20 border-accent/20 hover:border-accent/30';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-bg border border-border rounded-xl shadow-2xl overflow-hidden max-w-sm w-full mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-backdrop">
+            <div className="bg-bg border border-border rounded-xl shadow-2xl overflow-hidden max-w-sm w-full mx-4 animate-modal-show">
 
                 {/* Header */}
                 <div className="px-6 py-5 border-b border-border bg-bg/50">
