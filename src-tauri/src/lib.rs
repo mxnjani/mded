@@ -7,10 +7,6 @@ use tauri::Emitter;
 /// Once set to true, the next CloseRequested event will proceed without interception.
 static CLOSE_ALLOWED: AtomicBool = AtomicBool::new(false);
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
 
 /// Called by the frontend to actually close the app (after user confirms or doc is clean).
 #[tauri::command]
@@ -20,7 +16,7 @@ fn close_app(window: tauri::Window) {
 }
 
 /// Structured info about how the app was launched.
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Clone)]
 struct LaunchInfo {
     source: String,
     file_name: Option<String>,
@@ -42,7 +38,7 @@ fn get_launch_info() -> LaunchInfo {
             file_path: args.get(4).cloned(),
         }
     } else {
-        // Existing: file-association launch (args[1] is a .md path)
+        // Handle standalone file-association launch
         let file_path = args.get(1)
             .filter(|p| {
                 let lower = p.to_lowercase();
@@ -91,7 +87,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, close_app, get_launch_info])
+        .invoke_handler(tauri::generate_handler![close_app, get_launch_info])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 // If a previous confirmation already allowed close, let it through.
