@@ -1,10 +1,4 @@
 import { useRef, useEffect, useDeferredValue } from 'react';
-
-declare global {
-  interface Window {
-    __TAURI_INTERNALS__?: Record<string, unknown>;
-  }
-}
 import { Header } from './components/Header';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
@@ -14,6 +8,12 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: Record<string, unknown>;
+  }
+}
 
 
 export default function App() {
@@ -50,7 +50,6 @@ export default function App() {
     nextCursorRef,
   } = useMarkdownEditor(editorRef);
 
-  // Wrap insertText to pass history functions
   const insertTextWithHistory = (before: string, after: string = '') => {
     insertText(before, after, pushToHistory, nextCursorRef);
   };
@@ -62,9 +61,8 @@ export default function App() {
 
   useEffect(() => {
     if (window.__TAURI_INTERNALS__) {
-      getCurrentWindow().maximize().catch(console.error).finally(() => {
-        getCurrentWindow().show();
-      });
+      const win = getCurrentWindow();
+      win.maximize().catch(() => { }).finally(() => win.show());
     }
   }, []);
 
