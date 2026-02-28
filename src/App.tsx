@@ -62,7 +62,9 @@ export default function App() {
 
   useEffect(() => {
     if (window.__TAURI_INTERNALS__) {
-      getCurrentWindow().show();
+      getCurrentWindow().maximize().then(() => {
+        getCurrentWindow().show();
+      });
     }
   }, []);
 
