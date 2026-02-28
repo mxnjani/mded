@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 
 /// Once set to true, the next CloseRequested event will proceed without interception.
 static CLOSE_ALLOWED: AtomicBool = AtomicBool::new(false);
@@ -82,6 +82,11 @@ pub fn run() {
             
             if launch_info.file_path.is_some() {
                 let _ = app.emit("open-file", launch_info);
+            }
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
             }
         }))
         .plugin(tauri_plugin_dialog::init())
