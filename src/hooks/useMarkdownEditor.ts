@@ -271,15 +271,36 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
     useEffect(() => {
         if (!window.__TAURI_INTERNALS__) return;
 
-        const unlistenPromise = listen<string>('open-file', async (event) => {
-            const filePath = event.payload;
+        const unlistenPromise = listen<LaunchInfo | string>('open-file', async (event) => {
+            const payload = event.payload;
+            let filePath: string | null = null;
+            let fileNameStr: string | null = null;
+            let source: string | null = null;
+
+            if (typeof payload === 'string') {
+                filePath = payload;
+            } else if (payload && typeof payload === 'object') {
+                filePath = payload.file_path;
+                fileNameStr = payload.file_name;
+                source = payload.source;
+            }
+
+            if (!filePath) return;
+
             try {
                 const content = await readTextFile(filePath);
                 setMarkdown(content);
                 resetHistory(content);
-                const newFileName = filePath.split(/[/\\]/).pop();
+                const newFileName = fileNameStr || filePath.split(/[/\\]/).pop();
                 if (newFileName) setFileName(newFileName);
                 setFilePath(filePath);
+
+                if (source === 'mdvault') {
+                    setIsMdvaultMode(true);
+                } else {
+                    setIsMdvaultMode(false);
+                }
+
                 setIsDirty(false);
             } catch (err) {
                 console.error("Failed to read opened file:", err);

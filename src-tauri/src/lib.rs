@@ -62,8 +62,30 @@ fn get_launch_info() -> LaunchInfo {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            if let Some(file_path) = args.get(1) {
-                let _ = app.emit("open-file", file_path);
+            let launch_info = if args.get(1).map(|s| s.as_str()) == Some("mdvault") {
+                LaunchInfo {
+                    source: "mdvault".into(),
+                    file_name: args.get(2).cloned(),
+                    file_uuid: args.get(3).cloned(),
+                    file_path: args.get(4).cloned(),
+                }
+            } else {
+                let file_path = args.get(1)
+                    .filter(|p| {
+                        let lower = p.to_lowercase();
+                        lower.ends_with(".md") || lower.ends_with(".markdown") || lower.ends_with(".txt")
+                    })
+                    .cloned();
+                LaunchInfo {
+                    source: "standalone".into(),
+                    file_name: None,
+                    file_uuid: None,
+                    file_path,
+                }
+            };
+            
+            if launch_info.file_path.is_some() {
+                let _ = app.emit("open-file", launch_info);
             }
         }))
         .plugin(tauri_plugin_dialog::init())
