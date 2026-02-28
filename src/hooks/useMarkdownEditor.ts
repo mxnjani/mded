@@ -235,8 +235,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                     filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'txt'] }]
                 });
 
-                if (selected === null) {
-                } else {
+                if (selected) {
                     const filePath = Array.isArray(selected) ? selected[0] : selected;
                     const content = await readTextFile(filePath);
                     setMarkdown(content);

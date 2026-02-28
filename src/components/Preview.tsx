@@ -33,7 +33,7 @@ function slugify(text: string): string {
 }
 
 
-function CodeComponent({ node, inline, className, children, ...props }: any) {
+function CodeComponent({ inline, className, children, ...props }: any) {
     const match = /language-(\w+)/.exec(className || '');
     return match ? (
         <SyntaxHighlighter
