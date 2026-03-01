@@ -20,7 +20,7 @@ export default function App() {
   const previewRef = useRef<HTMLDivElement>(null);
 
   const editorState = useMarkdownEditor(editorRef);
-  const { markdown, fileName, viewMode, isDirty, showCloseConfirm, showNewFileConfirm, confirmNewFile } = editorState;
+  const { markdown, fileName, viewMode, isDirty, showCloseConfirm, showNewFileConfirm, showOpenFileConfirm, confirmNewFile, confirmOpenFile } = editorState;
 
   const insertTextWithHistory = (before: string, after: string = '') => {
     editorState.insertText(before, after, editorState.pushToHistory, editorState.nextCursorRef);
@@ -220,6 +220,16 @@ export default function App() {
         variant="danger"
         onConfirm={confirmNewFile}
         onCancel={() => editorState.setShowNewFileConfirm(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showOpenFileConfirm}
+        title="Unsaved Changes"
+        message="Open a new file? Unsaved changes in the current file will be lost."
+        confirmLabel="Discard & Open"
+        variant="danger"
+        onConfirm={confirmOpenFile}
+        onCancel={() => editorState.setShowOpenFileConfirm(false)}
       />
     </div>
   );

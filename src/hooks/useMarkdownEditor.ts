@@ -4,10 +4,18 @@ import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useHistory } from './useHistory';
 import { isTauri } from '../utils';
 
 export type ViewMode = 'editor' | 'split' | 'preview';
+
+interface PendingOpenFile {
+    type: 'tauri' | 'web';
+    path?: string;
+    file?: File;
+    content?: string;
+}
 
 const DEFAULT_MARKDOWN = `# New Document
 
@@ -32,6 +40,8 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
     const [showNewFileConfirm, setShowNewFileConfirm] = useState(false);
+    const [showOpenFileConfirm, setShowOpenFileConfirm] = useState(false);
+    const [pendingOpenFile, setPendingOpenFile] = useState<PendingOpenFile | null>(null);
 
     const [isDarkMode, setIsDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -207,6 +217,24 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         reader.readAsText(file);
     }, [resetHistory]);
 
+    const confirmOpenFile = useCallback(() => {
+        if (!pendingOpenFile) return;
+
+        if (pendingOpenFile.type === 'tauri' && pendingOpenFile.content && pendingOpenFile.path) {
+            setMarkdown(pendingOpenFile.content);
+            resetHistory(pendingOpenFile.content);
+            const newFileName = pendingOpenFile.path.split(/[/\\]/).pop();
+            if (newFileName) setFileName(newFileName);
+            setFilePath(pendingOpenFile.path);
+        } else if (pendingOpenFile.type === 'web' && pendingOpenFile.file) {
+            loadFile(pendingOpenFile.file);
+        }
+
+        setIsDirty(false);
+        setShowOpenFileConfirm(false);
+        setPendingOpenFile(null);
+    }, [pendingOpenFile, loadFile, resetHistory]);
+
     const handleFileOpen = useCallback(async (e?: React.ChangeEvent<HTMLInputElement>) => {
         if (isTauri()) {
             try {
@@ -218,12 +246,18 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 if (selected) {
                     const filePath = Array.isArray(selected) ? selected[0] : selected;
                     const content = await readTextFile(filePath);
-                    setMarkdown(content);
-                    resetHistory(content);
-                    const newFileName = filePath.split(/[/\\]/).pop();
-                    if (newFileName) setFileName(newFileName);
-                    setFilePath(filePath);
-                    setIsDirty(false);
+
+                    if (isDirty) {
+                        setPendingOpenFile({ type: 'tauri', path: filePath, content });
+                        setShowOpenFileConfirm(true);
+                    } else {
+                        setMarkdown(content);
+                        resetHistory(content);
+                        const newFileName = filePath.split(/[/\\]/).pop();
+                        if (newFileName) setFileName(newFileName);
+                        setFilePath(filePath);
+                        setIsDirty(false);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to open file", err);
@@ -231,20 +265,32 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         } else {
             const file = e?.target?.files?.[0];
             if (!file) return;
-            loadFile(file);
+
+            if (isDirty) {
+                setPendingOpenFile({ type: 'web', file });
+                setShowOpenFileConfirm(true);
+            } else {
+                loadFile(file);
+            }
+
             if (e?.target) {
                 e.target.value = '';
             }
         }
-    }, [loadFile]);
+    }, [isDirty, loadFile, resetHistory]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file && (file.name.endsWith('.md') || file.name.endsWith('.markdown') || file.name.endsWith('.txt'))) {
-            loadFile(file);
+            if (isDirty) {
+                setPendingOpenFile({ type: 'web', file });
+                setShowOpenFileConfirm(true);
+            } else {
+                loadFile(file);
+            }
         }
-    }, [loadFile]);
+    }, [isDirty, loadFile]);
 
     useEffect(() => {
         if (!isTauri()) return;
@@ -255,21 +301,55 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
 
             try {
                 const content = await readTextFile(openFilePath);
-                setMarkdown(content);
-                resetHistory(content);
-                const newFileName = openFilePath.split(/[/\\]/).pop();
-                if (newFileName) setFileName(newFileName);
-                setFilePath(openFilePath);
-                setIsDirty(false);
+                if (isDirty) {
+                    setPendingOpenFile({ type: 'tauri', path: openFilePath, content });
+                    setShowOpenFileConfirm(true);
+                } else {
+                    setMarkdown(content);
+                    resetHistory(content);
+                    const newFileName = openFilePath.split(/[/\\]/).pop();
+                    if (newFileName) setFileName(newFileName);
+                    setFilePath(openFilePath);
+                    setIsDirty(false);
+                }
             } catch (err) {
                 console.error("Failed to read opened file:", err);
             }
         });
 
+        // Tauri native drop fix
+        const unlistenDropPromise = getCurrentWebview().onDragDropEvent(async (event) => {
+            if (event.payload.type === 'drop') {
+                const droppedPath = event.payload.paths[0];
+                if (!droppedPath) return;
+
+                const ext = droppedPath.toLowerCase().split('.').pop();
+                if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
+                    try {
+                        const content = await readTextFile(droppedPath);
+                        if (isDirty) {
+                            setPendingOpenFile({ type: 'tauri', path: droppedPath, content });
+                            setShowOpenFileConfirm(true);
+                        } else {
+                            setMarkdown(content);
+                            resetHistory(content);
+                            const newFileName = droppedPath.split(/[/\\]/).pop();
+                            if (newFileName) setFileName(newFileName);
+                            setFilePath(droppedPath);
+                            setIsDirty(false);
+                        }
+                    } catch (err) {
+                        console.error("Failed to read dropped file:", err);
+                    }
+                }
+            }
+        });
+
         return () => {
             unlistenPromise.then(unlisten => unlisten());
+            unlistenDropPromise.then(unlisten => unlisten());
         };
-    }, []);
+    }, [isDirty, resetHistory]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -332,7 +412,10 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         setShowCloseConfirm,
         showNewFileConfirm,
         setShowNewFileConfirm,
+        showOpenFileConfirm,
+        setShowOpenFileConfirm,
         confirmNewFile,
+        confirmOpenFile,
         handleNewFile,
         handleFileOpen,
         handleDrop,
