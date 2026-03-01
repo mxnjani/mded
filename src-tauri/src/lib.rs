@@ -34,6 +34,37 @@ fn show_maximized_native(window: tauri::Window) {
     let _ = window.set_focus();
 }
 
+#[tauri::command]
+async fn fetch_link_title(url: String) -> Result<String, String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    match client.get(&url).send().await {
+        Ok(resp) => {
+            let text = resp.text().await.map_err(|e| e.to_string())?;
+            let text_lower = text.to_lowercase();
+            if let Some(start) = text_lower.find("<title>") {
+                let after_open = start + 7;
+                if let Some(end_offset) = text_lower[after_open..].find("</title>") {
+                    let title = &text[after_open..after_open + end_offset];
+                    let decoded = title
+                        .replace("&amp;", "&")
+                        .replace("&lt;", "<")
+                        .replace("&gt;", ">")
+                        .replace("&quot;", "\"")
+                        .replace("&#39;", "'")
+                        .replace("&#x27;", "'");
+                    return Ok(decoded.trim().to_string());
+                }
+            }
+            Err("Title not found on the page".to_string())
+        }
+        Err(e) => Err(format!("Request failed: {}", e)),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -57,7 +88,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             close_app,
             get_launch_file,
-            show_maximized_native
+            show_maximized_native,
+            fetch_link_title
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

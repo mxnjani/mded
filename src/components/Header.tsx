@@ -1,15 +1,16 @@
-
 import {
     View, Save, FolderOpen, Plus, Maximize2, Minimize2,
-    Bold, Italic, Code, Link as LinkIcon, Strikethrough, Quote,
-    Sun, Moon, Pencil, Columns2, SaveAll, Keyboard, List, ListOrdered, ListChecks
+    Bold, Italic, Code, Strikethrough, Quote,
+    Sun, Moon, Pencil, Columns2, SaveAll, Keyboard, List, ListOrdered, ListChecks, Image as ImageIcon, History
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
 import { ShortcutDialog } from './ShortcutDialog';
+import { InsertMediaDialog } from './InsertMediaDialog';
+import { RecentFilesDialog } from './RecentFilesDialog';
+import { useState, useEffect } from 'react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
-import { insertCodeBlock } from '../utils';
+import { insertCodeBlock, isTauri } from '../utils';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { isTauri } from '../utils';
 
 interface HeaderProps {
     editorState: ReturnType<typeof useMarkdownEditor>;
@@ -31,7 +32,7 @@ export function Header({
     const {
         handleNewFile,
         handleFileOpen,
-        handleExport,
+        handleSave,
         handleSaveAs,
         isDirty,
         viewMode,
@@ -39,8 +40,30 @@ export function Header({
         isDarkMode,
         setIsDarkMode,
         isFullscreen,
-        setIsFullscreen
+        setIsFullscreen,
+        filePath,
+        recentFiles,
+        openRecentFile
     } = editorState;
+
+    const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
+    const [isRecentDialogOpen, setIsRecentDialogOpen] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setIsMediaDialogOpen(true);
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r') {
+                e.preventDefault();
+                setIsRecentDialogOpen(true);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     return (
         <header className="h-11 border-b border-border bg-editor-bg flex items-center justify-between px-4 shrink-0 z-30 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1 min-w-max text-accent">
@@ -53,8 +76,9 @@ export function Header({
                             fileInputRef.current?.click();
                         }
                     }} icon={<FolderOpen size={14} />} title="Open (Ctrl+O)" />
+                    <ToolbarButton onClick={() => setIsRecentDialogOpen(true)} icon={<History size={14} />} title="Recent Files (Ctrl+R)" />
                     <div className="relative">
-                        <ToolbarButton onClick={handleExport} icon={<Save size={14} />} title="Save (Ctrl+S)" />
+                        <ToolbarButton onClick={handleSave} icon={<Save size={14} />} title="Save (Ctrl+S)" />
                         {isDirty && (
                             <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
                         )}
@@ -79,7 +103,7 @@ export function Header({
                         icon={<Code size={14} />}
                         title="Code (Ctrl+E)"
                     />
-                    <ToolbarButton onClick={() => insertTextWithHistory('[', '](url)')} icon={<LinkIcon size={14} />} title="Link (Ctrl+K)" />
+                    <ToolbarButton onClick={() => setIsMediaDialogOpen(true)} icon={<ImageIcon size={14} />} title="Insert Link and Media (Ctrl+K)" />
                 </div>
 
                 <div className="w-px h-4 bg-border mx-1.5" />
@@ -97,21 +121,21 @@ export function Header({
                         active={viewMode === 'editor'}
                         onClick={() => setViewMode('editor')}
                         icon={<Pencil size={12} />}
-                        title="Editor (Ctrl+1)"
+                        title="Editor (Alt+1)"
                         className="w-7.5 h-6.5 rounded-none border-none ring-0"
                     />
                     <ToolbarButton
                         active={viewMode === 'split'}
                         onClick={() => setViewMode('split')}
                         icon={<Columns2 size={12} />}
-                        title="Split (Ctrl+2)"
+                        title="Split (Alt+2)"
                         className="w-7.5 h-6.5 rounded-none border-none ring-0"
                     />
                     <ToolbarButton
                         active={viewMode === 'preview'}
                         onClick={() => setViewMode('preview')}
                         icon={<View size={12} />}
-                        title="Preview (Ctrl+3)"
+                        title="Preview (Alt+3)"
                         className="w-7.5 h-6.5 rounded-none border-none ring-0"
                     />
                 </div>
@@ -143,6 +167,31 @@ export function Header({
             <ShortcutDialog
                 isOpen={showShortcuts}
                 onClose={() => setShowShortcuts(false)}
+            />
+
+            <RecentFilesDialog
+                isOpen={isRecentDialogOpen}
+                onClose={() => setIsRecentDialogOpen(false)}
+                recentFiles={recentFiles}
+                onOpenRecent={openRecentFile}
+            />
+
+            <InsertMediaDialog
+                isOpen={isMediaDialogOpen}
+                onClose={() => setIsMediaDialogOpen(false)}
+                onInsert={(markdown) => {
+                    const textarea = editorRef.current;
+                    let before = markdown;
+                    let after = '';
+                    if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
+                        // If they have text selected, don't wrap it unless they carefully chose,
+                        // but insertTextWithHistory puts `before` + `selected` + `after`.
+                        // For simple media insertion, replacing or prepending is fine. 
+                        after = '';
+                    }
+                    insertTextWithHistory(before, after);
+                }}
+                currentFilePath={filePath || null}
             />
         </header>
     );

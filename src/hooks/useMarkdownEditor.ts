@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, RefObject } from 'react';
+import React, { useState, useEffect, useCallback, useRef, RefObject } from 'react';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { invoke } from '@tauri-apps/api/core';
@@ -43,6 +43,20 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
     const [showOpenFileConfirm, setShowOpenFileConfirm] = useState(false);
     const [pendingOpenFile, setPendingOpenFile] = useState<PendingOpenFile | null>(null);
 
+    const [recentFiles, setRecentFiles] = useState<{ path: string, name: string }[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('mded_recent_files');
+            if (saved) {
+                try {
+                    return JSON.parse(saved);
+                } catch (e) {
+                    console.error("Failed to parse recent files", e);
+                }
+            }
+        }
+        return [];
+    });
+
     const [isDarkMode, setIsDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('mded_darkmode') === 'true' ||
@@ -51,6 +65,22 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         return false;
     });
 
+    // Refs to avoid stale closures in event listeners
+    const isDirtyRef = useRef(isDirty);
+    useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
+
+    const isFullscreenRef = useRef(isFullscreen);
+    useEffect(() => { isFullscreenRef.current = isFullscreen; }, [isFullscreen]);
+
+    const addRecentFile = useCallback((path: string, name: string) => {
+        setRecentFiles(prev => {
+            const filtered = prev.filter(f => f.path !== path);
+            const newFiles = [{ path, name }, ...filtered].slice(0, 10);
+            localStorage.setItem('mded_recent_files', JSON.stringify(newFiles));
+            return newFiles;
+        });
+    }, []);
+
     const { push: pushToHistory, undo, redo, reset: resetHistory, nextCursorRef, lastValue } = useHistory({
         onRestore: (md) => {
             setMarkdown(md);
@@ -58,6 +88,69 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         },
     });
 
+    /**
+     * Single helper to load file content into the editor, replacing
+     * the previous 5x duplicated block across the hook.
+     */
+    const applyFileContent = useCallback((content: string, path: string) => {
+        setMarkdown(content);
+        resetHistory(content);
+        const name = path.split(/[/\\]/).pop();
+        if (name) {
+            setFileName(name);
+            addRecentFile(path, name);
+        }
+        setFilePath(path);
+        setIsDirty(false);
+    }, [resetHistory, addRecentFile]);
+
+    const handleImagePaste = useCallback(async (file: File) => {
+        if (!isTauri()) {
+            alert("Pasting images directly to files is only supported in the desktop app.");
+            return;
+        }
+
+        if (!filePath) {
+            alert("Please save this markdown file first before pasting images.");
+            return;
+        }
+
+        try {
+            const { writeFile } = await import('@tauri-apps/plugin-fs');
+            const { dirname, join } = await import('@tauri-apps/api/path');
+
+            const currentDir = await dirname(filePath);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const extension = file.type.split('/')[1] || 'png';
+            const imgName = `image_${timestamp}.${extension}`;
+            const destPath = await join(currentDir, imgName);
+
+            const buffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(buffer);
+            await writeFile(destPath, uint8Array);
+
+            const textarea = editorRef.current;
+            if (!textarea) return;
+
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+
+            const imageMarkdown = `![image](./${imgName})`;
+            const newText = text.substring(0, start) + imageMarkdown + text.substring(end);
+            const newCursor = start + imageMarkdown.length;
+
+            setMarkdown(newText);
+            setIsDirty(true);
+            pushToHistory(newText, newCursor, true);
+            nextCursorRef.current = newCursor;
+        } catch (err) {
+            console.error("Failed to paste image:", err);
+            alert(`Failed to save pasted image: ${err}`);
+        }
+    }, [filePath, editorRef, pushToHistory, nextCursorRef]);
+
+    // Startup: load launch file or restore from localStorage
     useEffect(() => {
         const init = async () => {
             if (isTauri()) {
@@ -65,12 +158,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                     const launchFilePath = await invoke<string | null>('get_launch_file');
                     if (launchFilePath) {
                         const content = await readTextFile(launchFilePath);
-                        setMarkdown(content);
-                        resetHistory(content);
-                        const name = launchFilePath.split(/[/\\]/).pop();
-                        if (name) setFileName(name);
-                        setFilePath(launchFilePath);
-                        setIsDirty(false);
+                        applyFileContent(content, launchFilePath);
                         return;
                     }
                 } catch (err) {
@@ -94,6 +182,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         init();
     }, []);
 
+    // Persist state to localStorage and sync dark mode class
     useEffect(() => {
         localStorage.setItem('mded_content', markdown);
         localStorage.setItem('mded_filename', fileName);
@@ -108,12 +197,11 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         }
     }, [markdown, fileName, viewMode, isDarkMode, isDirty]);
 
-    const insertText = useCallback((
-        before: string,
-        after: string = '',
-        pushToHistory?: (value: string, cursor: number, immediate?: boolean) => void,
-        nextCursorRef?: React.MutableRefObject<number | null>
-    ) => {
+    /**
+     * Insert text at the current cursor position in the editor.
+     * Uses the hook's own pushToHistory/nextCursorRef directly.
+     */
+    const insertText = useCallback((before: string, after: string = '') => {
         const textarea = editorRef.current;
         if (!textarea) return;
         const start = textarea.selectionStart;
@@ -124,16 +212,9 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         const newCursor = start + before.length + selectedText.length;
         setMarkdown(newText);
         setIsDirty(true);
-        if (pushToHistory) pushToHistory(newText, newCursor, true);
-        if (nextCursorRef) {
-            nextCursorRef.current = start + before.length;
-        } else {
-            setTimeout(() => {
-                textarea.focus();
-                textarea.setSelectionRange(start + before.length, end + before.length);
-            }, 0);
-        }
-    }, [editorRef]);
+        pushToHistory(newText, newCursor, true);
+        nextCursorRef.current = start + before.length;
+    }, [editorRef, pushToHistory, nextCursorRef]);
 
     const handleSaveAs = useCallback(async () => {
         if (isTauri()) {
@@ -147,7 +228,10 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                         const pathString = Array.isArray(savePath) ? savePath[0] : savePath;
                         await writeTextFile(pathString, markdown);
                         const newFileName = pathString.split(/[/\\]/).pop();
-                        if (newFileName) setFileName(newFileName);
+                        if (newFileName) {
+                            setFileName(newFileName);
+                            addRecentFile(pathString, newFileName);
+                        }
                         setFilePath(pathString);
                         setIsDirty(false);
                     } catch (writeErr) {
@@ -169,7 +253,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         }
     }, [markdown, fileName]);
 
-    const handleExport = useCallback(async () => {
+    const handleSave = useCallback(async () => {
         if (isTauri() && filePath) {
             try {
                 await writeTextFile(filePath, markdown);
@@ -221,11 +305,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         if (!pendingOpenFile) return;
 
         if (pendingOpenFile.type === 'tauri' && pendingOpenFile.content && pendingOpenFile.path) {
-            setMarkdown(pendingOpenFile.content);
-            resetHistory(pendingOpenFile.content);
-            const newFileName = pendingOpenFile.path.split(/[/\\]/).pop();
-            if (newFileName) setFileName(newFileName);
-            setFilePath(pendingOpenFile.path);
+            applyFileContent(pendingOpenFile.content, pendingOpenFile.path);
         } else if (pendingOpenFile.type === 'web' && pendingOpenFile.file) {
             loadFile(pendingOpenFile.file);
         }
@@ -233,7 +313,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         setIsDirty(false);
         setShowOpenFileConfirm(false);
         setPendingOpenFile(null);
-    }, [pendingOpenFile, loadFile, resetHistory]);
+    }, [pendingOpenFile, loadFile, applyFileContent]);
 
     const handleFileOpen = useCallback(async (e?: React.ChangeEvent<HTMLInputElement>) => {
         if (isTauri()) {
@@ -244,19 +324,14 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 });
 
                 if (selected) {
-                    const filePath = Array.isArray(selected) ? selected[0] : selected;
-                    const content = await readTextFile(filePath);
+                    const openPath = Array.isArray(selected) ? selected[0] : selected;
+                    const content = await readTextFile(openPath);
 
-                    if (isDirty) {
-                        setPendingOpenFile({ type: 'tauri', path: filePath, content });
+                    if (isDirtyRef.current) {
+                        setPendingOpenFile({ type: 'tauri', path: openPath, content });
                         setShowOpenFileConfirm(true);
                     } else {
-                        setMarkdown(content);
-                        resetHistory(content);
-                        const newFileName = filePath.split(/[/\\]/).pop();
-                        if (newFileName) setFileName(newFileName);
-                        setFilePath(filePath);
-                        setIsDirty(false);
+                        applyFileContent(content, openPath);
                     }
                 }
             } catch (err) {
@@ -266,7 +341,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             const file = e?.target?.files?.[0];
             if (!file) return;
 
-            if (isDirty) {
+            if (isDirtyRef.current) {
                 setPendingOpenFile({ type: 'web', file });
                 setShowOpenFileConfirm(true);
             } else {
@@ -277,21 +352,37 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 e.target.value = '';
             }
         }
-    }, [isDirty, loadFile, resetHistory]);
+    }, [loadFile, applyFileContent]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file && (file.name.endsWith('.md') || file.name.endsWith('.markdown') || file.name.endsWith('.txt'))) {
-            if (isDirty) {
+            if (isDirtyRef.current) {
                 setPendingOpenFile({ type: 'web', file });
                 setShowOpenFileConfirm(true);
             } else {
                 loadFile(file);
             }
         }
-    }, [isDirty, loadFile]);
+    }, [loadFile]);
 
+    const openRecentFile = useCallback(async (path: string) => {
+        if (!isTauri()) return;
+        try {
+            const content = await readTextFile(path);
+            if (isDirtyRef.current) {
+                setPendingOpenFile({ type: 'tauri', path, content });
+                setShowOpenFileConfirm(true);
+            } else {
+                applyFileContent(content, path);
+            }
+        } catch (err) {
+            console.error("Failed to open recent file:", err);
+        }
+    }, [applyFileContent]);
+
+    // Tauri: listen for open-file events and native drag-drop
     useEffect(() => {
         if (!isTauri()) return;
 
@@ -301,23 +392,17 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
 
             try {
                 const content = await readTextFile(openFilePath);
-                if (isDirty) {
+                if (isDirtyRef.current) {
                     setPendingOpenFile({ type: 'tauri', path: openFilePath, content });
                     setShowOpenFileConfirm(true);
                 } else {
-                    setMarkdown(content);
-                    resetHistory(content);
-                    const newFileName = openFilePath.split(/[/\\]/).pop();
-                    if (newFileName) setFileName(newFileName);
-                    setFilePath(openFilePath);
-                    setIsDirty(false);
+                    applyFileContent(content, openFilePath);
                 }
             } catch (err) {
                 console.error("Failed to read opened file:", err);
             }
         });
 
-        // Tauri native drop fix
         const unlistenDropPromise = getCurrentWebview().onDragDropEvent(async (event) => {
             if (event.payload.type === 'drop') {
                 const droppedPath = event.payload.paths[0];
@@ -327,16 +412,11 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
                     try {
                         const content = await readTextFile(droppedPath);
-                        if (isDirty) {
+                        if (isDirtyRef.current) {
                             setPendingOpenFile({ type: 'tauri', path: droppedPath, content });
                             setShowOpenFileConfirm(true);
                         } else {
-                            setMarkdown(content);
-                            resetHistory(content);
-                            const newFileName = droppedPath.split(/[/\\]/).pop();
-                            if (newFileName) setFileName(newFileName);
-                            setFilePath(droppedPath);
-                            setIsDirty(false);
+                            applyFileContent(content, droppedPath);
                         }
                     } catch (err) {
                         console.error("Failed to read dropped file:", err);
@@ -349,8 +429,9 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             unlistenPromise.then(unlisten => unlisten());
             unlistenDropPromise.then(unlisten => unlisten());
         };
-    }, [isDirty, resetHistory]);
+    }, [applyFileContent]);
 
+    // Global keyboard shortcuts: file ops, view mode, fullscreen
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
@@ -377,7 +458,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                         if (e.shiftKey) {
                             handleSaveAs();
                         } else {
-                            handleExport();
+                            handleSave();
                         }
                         break;
                     case 'o':
@@ -392,20 +473,22 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             }
             if (e.key === 'F11') {
                 e.preventDefault();
-                setIsFullscreen(!isFullscreen);
+                const next = !isFullscreenRef.current;
+                setIsFullscreen(next);
                 if (isTauri()) {
-                    getCurrentWindow().setFullscreen(!isFullscreen).catch(err => console.error(err));
+                    getCurrentWindow().setFullscreen(next).catch(err => console.error(err));
                 }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleExport, handleSaveAs, handleNewFile, handleFileOpen, isFullscreen]);
+    }, [handleSave, handleSaveAs, handleNewFile, handleFileOpen]);
 
     return {
         markdown,
         setMarkdown: (md: string) => { setMarkdown(md); setIsDirty(true); },
         fileName,
+        filePath,
         isDirty,
         viewMode,
         setViewMode,
@@ -424,7 +507,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         handleNewFile,
         handleFileOpen,
         handleDrop,
-        handleExport,
+        handleSave,
         handleSaveAs,
         insertText,
         pushToHistory,
@@ -432,5 +515,8 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         redo,
         nextCursorRef,
         lastValue,
+        handleImagePaste,
+        recentFiles,
+        openRecentFile,
     };
 }

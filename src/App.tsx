@@ -1,18 +1,13 @@
-import { useRef, useEffect, useDeferredValue, useState } from 'react';
+import { useRef, useEffect, useDeferredValue, useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
 import { useMarkdownEditor } from './hooks/useMarkdownEditor';
-import { cn, insertCodeBlock } from './utils';
+import { cn, insertCodeBlock, isTauri } from './utils';
 import { ConfirmDialog } from './components/ConfirmDialog';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { isTauri } from './utils';
-
-// We can remove the declare global Window since we wrapped it in isTauri now,
-// but let's keep it in index.ts for safety if needed, or just let TS infer.
-
 
 export default function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +18,7 @@ export default function App() {
   const { markdown, fileName, viewMode, isDirty, showCloseConfirm, showNewFileConfirm, showOpenFileConfirm, confirmNewFile, confirmOpenFile } = editorState;
   const [showShortcuts, setShowShortcuts] = useState(false);
 
-  const insertTextWithHistory = (before: string, after: string = '') => {
+  const insertTextWithHistory = useCallback((before: string, after: string = '') => {
     let actualBefore = before;
     const textarea = editorRef.current;
 
@@ -34,8 +29,8 @@ export default function App() {
       }
     }
 
-    editorState.insertText(actualBefore, after, editorState.pushToHistory, editorState.nextCursorRef);
-  };
+    editorState.insertText(actualBefore, after);
+  }, [editorState.insertText]);
 
   const isDirtyRef = useRef(isDirty);
   useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
@@ -46,13 +41,11 @@ export default function App() {
   useEffect(() => {
     if (isTauri()) {
       invoke('show_maximized_native').catch(console.error);
-
-      // Also ensure focus
       getCurrentWindow().setFocus().catch(console.error);
     }
   }, []);
 
-  const applyHeading = (level: number) => {
+  const applyHeading = useCallback((level: number) => {
     const textarea = editorRef.current;
     if (!textarea) return;
     const { value, selectionStart, selectionEnd } = textarea;
@@ -85,7 +78,7 @@ export default function App() {
     editorState.setMarkdown(newValue);
     editorState.pushToHistory(newValue, newCursor, true);
     editorState.nextCursorRef.current = newCursor;
-  };
+  }, [editorState.setMarkdown, editorState.pushToHistory, editorState.nextCursorRef]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -151,10 +144,6 @@ export default function App() {
             e.preventDefault();
             insertCodeBlock(editorRef, insertTextWithHistory);
             break;
-          case 'k':
-            e.preventDefault();
-            insertTextWithHistory('[', '](url)');
-            break;
           case 'l':
             e.preventDefault();
             insertTextWithHistory('\n- ');
@@ -193,7 +182,7 @@ export default function App() {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [editorState, insertTextWithHistory]);
+  }, [applyHeading, insertTextWithHistory]);
 
   useEffect(() => {
     const titleStr = isDirty ? `mdED [${fileName}]*` : `mdED [${fileName}]`;
@@ -228,7 +217,7 @@ export default function App() {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
-  }, [editorState.setShowCloseConfirm]); // Need to wrap inside function later or just keep as is with editorState
+  }, [editorState.setShowCloseConfirm]);
 
   return (
     <div
@@ -267,6 +256,7 @@ export default function App() {
           <Preview
             markdown={deferredMarkdown}
             previewRef={previewRef}
+            filePath={editorState.filePath}
           />
         )}
 
@@ -282,6 +272,7 @@ export default function App() {
               <Preview
                 markdown={deferredMarkdown}
                 previewRef={previewRef}
+                filePath={editorState.filePath}
               />
             </div>
           </div>

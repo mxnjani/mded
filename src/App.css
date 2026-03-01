@@ -33,15 +33,12 @@ body {
   color: var(--color-accent);
 }
 
-/* Remove ugly default browser focus outlines globally for clicking */
 *:focus {
   outline: none !important;
 }
 
-/* Let the editor textarea handle its own focus natively if needed, though Tailwind does this too */
 textarea:focus {
   outline: none !important;
-  /* Rely entirely on custom styling/cursor */
 }
 
 .markdown-body {
@@ -59,6 +56,7 @@ textarea:focus {
   margin-bottom: 0 !important;
 }
 
+/* GitHub Flavored Markdown heading styles */
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
@@ -85,6 +83,19 @@ textarea:focus {
 
 .markdown-body h3 {
   font-size: 1.25em;
+}
+
+.markdown-body h4 {
+  font-size: 1em;
+}
+
+.markdown-body h5 {
+  font-size: 0.875em;
+}
+
+.markdown-body h6 {
+  font-size: 0.85em;
+  color: var(--color-muted);
 }
 
 .markdown-body p,
@@ -200,6 +211,7 @@ textarea:focus {
   background-color: var(--color-editor-bg);
 }
 
+/* Base style for hr following GFM spec */
 .markdown-body hr {
   height: 0.25em;
   padding: 0;
@@ -246,6 +258,7 @@ textarea:focus {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -254,8 +267,10 @@ textarea:focus {
 @keyframes modal-show {
   from {
     opacity: 0;
-    transform: translateY(16px) translateZ(0); /* Using translateZ to force hardware acceleration cleanly */
+    transform: translateY(16px) translateZ(0);
+    /* Using translateZ to force hardware acceleration cleanly */
   }
+
   to {
     opacity: 1;
     transform: translateY(0) translateZ(0);

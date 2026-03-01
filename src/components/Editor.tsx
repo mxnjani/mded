@@ -119,6 +119,22 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
         }
     };
 
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.startsWith('image/')) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    e.preventDefault();
+                    editorState.handleImagePaste(file);
+                    return;
+                }
+            }
+        }
+    };
+
     return (
         <div className="flex-1 flex flex-col bg-editor-bg relative group">
             <textarea
@@ -126,6 +142,7 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
                 value={markdown}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 placeholder="Write something..."
                 className="flex-1 w-full pt-12 px-12 pb-[40vh] resize-none focus:outline-none font-mono text-[15px] leading-[1.7] tracking-[0.01em] bg-transparent m-0 whitespace-pre-wrap cursor-auto"
                 spellCheck={false}
