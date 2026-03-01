@@ -81,6 +81,20 @@ export const Preview = React.memo(function Preview({ markdown, previewRef }: Pre
             h4: makeHeading('h4'),
             h5: makeHeading('h5'),
             h6: makeHeading('h6'),
+            a: ({ node, href, children, ...props }: any) => (
+                <a
+                    href={href}
+                    {...props}
+                    onClick={(e) => {
+                        e.preventDefault();
+                        if (href) {
+                            window.open(href, '_blank', 'noopener,noreferrer');
+                        }
+                    }}
+                >
+                    {children}
+                </a>
+            ),
         };
     }, []);
 
