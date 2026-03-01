@@ -24,7 +24,17 @@ export default function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   const insertTextWithHistory = (before: string, after: string = '') => {
-    editorState.insertText(before, after, editorState.pushToHistory, editorState.nextCursorRef);
+    let actualBefore = before;
+    const textarea = editorRef.current;
+
+    if (textarea && before.startsWith('\n')) {
+      const { value, selectionStart } = textarea;
+      if (selectionStart === 0 || value[selectionStart - 1] === '\n') {
+        actualBefore = before.substring(1);
+      }
+    }
+
+    editorState.insertText(actualBefore, after, editorState.pushToHistory, editorState.nextCursorRef);
   };
 
   const isDirtyRef = useRef(isDirty);
