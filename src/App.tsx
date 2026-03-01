@@ -42,6 +42,36 @@ export default function App() {
     }
   }, []);
 
+  const cycleHeading = () => {
+    const textarea = editorRef.current;
+    if (!textarea) return;
+    const { value, selectionStart } = textarea;
+    const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    const lineEnd = value.indexOf('\n', selectionStart);
+    const line = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+
+    const headingMatch = line.match(/^(#{1,4})\s/);
+    let newLine: string;
+    let cursorOffset: number;
+
+    if (!headingMatch) {
+      newLine = '# ' + line;
+      cursorOffset = 2;
+    } else if (headingMatch[1].length < 4) {
+      newLine = '#' + line;
+      cursorOffset = 1;
+    } else {
+      newLine = line.replace(/^#{1,4}\s/, '');
+      cursorOffset = -(headingMatch[1].length + 1);
+    }
+
+    const newValue = value.substring(0, lineStart) + newLine + value.substring(lineEnd === -1 ? value.length : lineEnd);
+    const newCursor = selectionStart + cursorOffset;
+    editorState.setMarkdown(newValue);
+    editorState.pushToHistory(newValue, newCursor, true);
+    editorState.nextCursorRef.current = newCursor;
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
@@ -75,7 +105,11 @@ export default function App() {
             break;
           case 'h':
             e.preventDefault();
-            insertTextWithHistory('# ');
+            cycleHeading();
+            break;
+          case 'd':
+            e.preventDefault();
+            insertTextWithHistory('~~', '~~');
             break;
           case 'q':
             e.preventDefault();
@@ -88,6 +122,27 @@ export default function App() {
           case 'k':
             e.preventDefault();
             insertTextWithHistory('[', '](url)');
+            break;
+          case 'l':
+            e.preventDefault();
+            insertTextWithHistory('\n- ');
+            break;
+        }
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+        switch (e.key.toLowerCase()) {
+          case 'l':
+            e.preventDefault();
+            insertTextWithHistory('\n1. ');
+            break;
+          case 'h':
+            e.preventDefault();
+            insertTextWithHistory('\n---\n');
+            break;
+          case 't':
+            e.preventDefault();
+            insertTextWithHistory('\n- [ ] ');
             break;
         }
       }

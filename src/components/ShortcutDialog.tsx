@@ -21,10 +21,15 @@ const shortcuts = [
             { keys: 'Ctrl+Shift+Z', label: 'Redo' },
             { keys: 'Ctrl+B', label: 'Bold' },
             { keys: 'Ctrl+I', label: 'Italic' },
-            { keys: 'Ctrl+H', label: 'Heading' },
+            { keys: 'Ctrl+D', label: 'Strikethrough' },
+            { keys: 'Ctrl+H', label: 'Heading (cycle H1–H4)' },
             { keys: 'Ctrl+E', label: 'Code' },
             { keys: 'Ctrl+K', label: 'Link' },
             { keys: 'Ctrl+Q', label: 'Blockquote' },
+            { keys: 'Ctrl+L', label: 'Bullet list' },
+            { keys: 'Ctrl+Shift+L', label: 'Ordered list' },
+            { keys: 'Ctrl+Shift+T', label: 'Task list' },
+            { keys: 'Ctrl+Shift+H', label: 'Horizontal rule' },
         ]
     },
     {

@@ -1,8 +1,8 @@
 
 import {
     View, Save, FolderOpen, Plus, Maximize2, Minimize2,
-    Bold, Italic, Code, Link as LinkIcon,
-    Hash, Sun, Moon, Pencil, Columns2, SaveAll, Keyboard
+    Bold, Italic, Code, Link as LinkIcon, Strikethrough,
+    Sun, Moon, Pencil, Columns2, SaveAll, Keyboard, List, ListOrdered, ListChecks
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
 import { ShortcutDialog } from './ShortcutDialog';
@@ -65,9 +65,9 @@ export function Header({
                 <div className="w-px h-4 bg-border mx-1.5" />
 
                 <div className="flex items-center gap-0.5">
-                    <ToolbarButton onClick={() => insertTextWithHistory('# ')} icon={<Hash size={14} />} title="Heading (Ctrl+H)" />
                     <ToolbarButton onClick={() => insertTextWithHistory('**', '**')} icon={<Bold size={14} />} title="Bold (Ctrl+B)" />
                     <ToolbarButton onClick={() => insertTextWithHistory('_', '_')} icon={<Italic size={14} />} title="Italic (Ctrl+I)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('~~', '~~')} icon={<Strikethrough size={14} />} title="Strikethrough (Ctrl+D)" />
                 </div>
 
                 <div className="w-px h-4 bg-border mx-1.5" />
@@ -79,6 +79,14 @@ export function Header({
                         title="Code (Ctrl+E)"
                     />
                     <ToolbarButton onClick={() => insertTextWithHistory('[', '](url)')} icon={<LinkIcon size={14} />} title="Link (Ctrl+K)" />
+                </div>
+
+                <div className="w-px h-4 bg-border mx-1.5" />
+
+                <div className="flex items-center gap-0.5">
+                    <ToolbarButton onClick={() => insertTextWithHistory('\n- ')} icon={<List size={14} />} title="Bullet List (Ctrl+L)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('\n1. ')} icon={<ListOrdered size={14} />} title="Ordered List (Ctrl+Shift+L)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('\n- [ ] ')} icon={<ListChecks size={14} />} title="Task List (Ctrl+Shift+T)" />
                 </div>
             </div>
 
