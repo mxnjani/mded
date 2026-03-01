@@ -38,6 +38,7 @@ const shortcuts = [
             { keys: 'Alt+2', label: 'Split view' },
             { keys: 'Alt+3', label: 'Preview only' },
             { keys: 'F11', label: 'Fullscreen' },
+            { keys: 'Ctrl+/', label: 'Shortcuts Help' },
         ]
     },
 ];

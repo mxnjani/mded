@@ -93,6 +93,11 @@ export default function App() {
         e.preventDefault();
       }
 
+      if (e.key === '/' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setShowShortcuts(v => !v);
+      }
+
       if (!import.meta.env.DEV) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
           e.preventDefault();
