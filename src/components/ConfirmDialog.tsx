@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 interface ConfirmDialogProps {
     isOpen: boolean;
     title: string;
@@ -19,15 +22,22 @@ export function ConfirmDialog({
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
-    if (!isOpen) return null;
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    if (!isOpen || !mounted) return null;
 
     const confirmClass = variant === 'danger'
         ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 hover:border-red-500/30'
         : 'bg-accent/10 text-accent hover:bg-accent/20 border-accent/20 hover:border-accent/30';
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-backdrop">
-            <div className="bg-bg border border-border rounded-xl shadow-2xl overflow-hidden max-w-sm w-full mx-4 animate-modal-show">
+    return createPortal(
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm animate-backdrop">
+            <div className="bg-bg border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden w-full max-w-sm mx-4 animate-modal-show transform-gpu antialiased">
 
                 {/* Header */}
                 <div className="px-6 py-5 border-b border-border bg-bg/50">
@@ -57,6 +67,7 @@ export function ConfirmDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

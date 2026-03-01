@@ -1,17 +1,15 @@
 import React, { useLayoutEffect } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
+import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
+
 interface EditorProps {
-    markdown: string;
-    setMarkdown: (value: string) => void;
+    editorState: ReturnType<typeof useMarkdownEditor>;
     editorRef: React.RefObject<HTMLTextAreaElement | null>;
-    pushToHistory: (value: string, cursor: number, immediate?: boolean) => void;
-    undo: () => void;
-    redo: () => void;
-    nextCursorRef: React.MutableRefObject<number | null>;
 }
 
-export const Editor = React.memo(function Editor({ markdown, setMarkdown, editorRef, pushToHistory, undo, redo, nextCursorRef }: EditorProps) {
+export const Editor = React.memo(function Editor({ editorState, editorRef }: EditorProps) {
+    const { markdown, setMarkdown, pushToHistory, undo, redo, nextCursorRef } = editorState;
     useLayoutEffect(() => {
         if (nextCursorRef.current !== null && editorRef.current) {
             const scrollTop = editorRef.current.scrollTop;

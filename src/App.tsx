@@ -5,15 +5,13 @@ import { Preview } from './components/Preview';
 import { useMarkdownEditor } from './hooks/useMarkdownEditor';
 import { cn, insertCodeBlock } from './utils';
 import { ConfirmDialog } from './components/ConfirmDialog';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { isTauri } from './utils';
 
-declare global {
-  interface Window {
-    __TAURI_INTERNALS__?: Record<string, unknown>;
-  }
-}
+// We can remove the declare global Window since we wrapped it in isTauri now,
+// but let's keep it in index.ts for safety if needed, or just let TS infer.
 
 
 export default function App() {
@@ -21,37 +19,11 @@ export default function App() {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const {
-    markdown,
-    setMarkdown,
-    fileName,
-    viewMode,
-    setViewMode,
-    isDarkMode,
-    setIsDarkMode,
-    isFullscreen,
-    setIsFullscreen,
-    showCloseConfirm,
-    setShowCloseConfirm,
-    showNewFileConfirm,
-    setShowNewFileConfirm,
-    confirmNewFile,
-    handleNewFile,
-    handleFileOpen,
-    handleDrop,
-    handleExport,
-    handleSaveAs,
-    insertText,
-    isDirty,
-    isMdvaultMode,
-    pushToHistory,
-    undo,
-    redo,
-    nextCursorRef,
-  } = useMarkdownEditor(editorRef);
+  const editorState = useMarkdownEditor(editorRef);
+  const { markdown, fileName, viewMode, isDirty, showCloseConfirm, showNewFileConfirm, confirmNewFile } = editorState;
 
   const insertTextWithHistory = (before: string, after: string = '') => {
-    insertText(before, after, pushToHistory, nextCursorRef);
+    editorState.insertText(before, after, editorState.pushToHistory, editorState.nextCursorRef);
   };
 
   const isDirtyRef = useRef(isDirty);
@@ -59,10 +31,13 @@ export default function App() {
 
   const deferredMarkdown = useDeferredValue(markdown);
 
+  // Startup: Stay hidden until React UI is ready, then show natively maximized
   useEffect(() => {
-    if (window.__TAURI_INTERNALS__) {
-      const win = getCurrentWindow();
-      win.maximize().catch(() => { }).finally(() => win.show());
+    if (isTauri()) {
+      invoke('show_maximized_native').catch(console.error);
+
+      // Also ensure focus
+      getCurrentWindow().setFocus().catch(console.error);
     }
   }, []);
 
@@ -130,27 +105,22 @@ export default function App() {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [insertText, pushToHistory, nextCursorRef]);
+  }, [editorState, insertTextWithHistory]);
 
   useEffect(() => {
-    let titleStr: string;
-    if (isMdvaultMode) {
-      titleStr = isDirty ? `mdED [mdVault - ${fileName}]*` : `mdED [mdVault - ${fileName}]`;
-    } else {
-      titleStr = isDirty ? `mdED [${fileName}]*` : `mdED [${fileName}]`;
-    }
-    if (window.__TAURI_INTERNALS__) {
+    const titleStr = isDirty ? `mdED [${fileName}]*` : `mdED [${fileName}]`;
+    if (isTauri()) {
       getCurrentWindow().setTitle(titleStr).catch(console.error);
     } else {
       document.title = titleStr;
     }
-  }, [fileName, isDirty, isMdvaultMode]);
+  }, [fileName, isDirty]);
 
   useEffect(() => {
-    if (window.__TAURI_INTERNALS__) {
+    if (isTauri()) {
       const unlistenPromise = listen('close-requested', async () => {
         if (isDirtyRef.current) {
-          setShowCloseConfirm(true);
+          editorState.setShowCloseConfirm(true);
         } else {
           await invoke('close_app');
         }
@@ -170,38 +140,27 @@ export default function App() {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
-  }, [setShowCloseConfirm]);
+  }, [editorState.setShowCloseConfirm]); // Need to wrap inside function later or just keep as is with editorState
 
   return (
     <div
       className="flex flex-col h-screen w-full bg-bg selection:bg-accent/10 overflow-hidden text-accent"
       onDragOver={(e) => e.preventDefault()}
-      onDrop={handleDrop}
+      onDrop={editorState.handleDrop}
     >
       <input
         type="file"
         ref={fileInputRef}
-        onChange={handleFileOpen}
+        onChange={editorState.handleFileOpen}
         accept=".md,.markdown,.txt"
         className="hidden"
       />
 
       <Header
-        handleNewFile={handleNewFile}
-        handleFileOpen={handleFileOpen}
-        handleExport={handleExport}
-        handleSaveAs={handleSaveAs}
-        insertText={insertTextWithHistory}
-        isDirty={isDirty}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
-        isFullscreen={isFullscreen}
-        setIsFullscreen={setIsFullscreen}
+        editorState={editorState}
+        insertTextWithHistory={insertTextWithHistory}
         fileInputRef={fileInputRef}
         editorRef={editorRef}
-        isMdvaultMode={isMdvaultMode}
       />
 
       <main className={cn(
@@ -209,13 +168,8 @@ export default function App() {
       )}>
         {viewMode === 'editor' && (
           <Editor
-            markdown={markdown}
-            setMarkdown={setMarkdown}
+            editorState={editorState}
             editorRef={editorRef}
-            pushToHistory={pushToHistory}
-            undo={undo}
-            redo={redo}
-            nextCursorRef={nextCursorRef}
           />
         )}
 
@@ -230,13 +184,8 @@ export default function App() {
           <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col border-r border-border overflow-hidden">
               <Editor
-                markdown={markdown}
-                setMarkdown={setMarkdown}
+                editorState={editorState}
                 editorRef={editorRef}
-                pushToHistory={pushToHistory}
-                undo={undo}
-                redo={redo}
-                nextCursorRef={nextCursorRef}
               />
             </div>
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -256,11 +205,11 @@ export default function App() {
         confirmLabel="Close without saving"
         variant="danger"
         onConfirm={async () => {
-          if (window.__TAURI_INTERNALS__) {
+          if (isTauri()) {
             await invoke('close_app');
           }
         }}
-        onCancel={() => setShowCloseConfirm(false)}
+        onCancel={() => editorState.setShowCloseConfirm(false)}
       />
 
       <ConfirmDialog
@@ -270,7 +219,7 @@ export default function App() {
         confirmLabel="Discard & New"
         variant="danger"
         onConfirm={confirmNewFile}
-        onCancel={() => setShowNewFileConfirm(false)}
+        onCancel={() => editorState.setShowNewFileConfirm(false)}
       />
     </div>
   );

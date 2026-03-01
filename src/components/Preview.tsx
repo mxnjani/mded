@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, HTMLAttributes, ClassAttributes } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -33,7 +33,7 @@ function slugify(text: string): string {
 }
 
 
-function CodeComponent({ inline, className, children, ...props }: any) {
+function CodeComponent({ inline, className, children, ...props }: HTMLAttributes<HTMLElement> & ClassAttributes<HTMLElement> & { inline?: boolean }) {
     const match = /language-(\w+)/.exec(className || '');
     return match ? (
         <SyntaxHighlighter
@@ -63,7 +63,7 @@ export const Preview = React.memo(function Preview({ markdown, previewRef }: Pre
 
     const mdComponents = useMemo(() => {
         function makeHeading(Tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') {
-            return function Heading({ children, node, ...props }: any) {
+            return function Heading({ children, node, ...props }: HTMLAttributes<HTMLHeadingElement> & { node?: any }) {
                 const text = getTextContent(children);
                 const base = slugify(text) || 'heading';
                 const count = slugCountRef.current.get(base) ?? 0;

@@ -5,85 +5,75 @@ import {
     Hash, Sun, Moon, Pencil, Columns2, SaveAll
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
-import { ViewMode } from '../hooks/useMarkdownEditor';
+import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { insertCodeBlock } from '../utils';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { isTauri } from '../utils';
 
 interface HeaderProps {
-    handleNewFile: () => void;
-    handleFileOpen: (e?: React.ChangeEvent<HTMLInputElement>) => void;
-    handleExport: () => void;
-    handleSaveAs: () => void;
-    insertText: (before: string, after?: string) => void;
-    isDirty: boolean;
-    viewMode: ViewMode;
-    setViewMode: (mode: ViewMode) => void;
-    isDarkMode: boolean;
-    setIsDarkMode: (isDark: boolean) => void;
-    isFullscreen: boolean;
-    setIsFullscreen: (full: boolean) => void;
+    editorState: ReturnType<typeof useMarkdownEditor>;
+    insertTextWithHistory: (before: string, after?: string) => void;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     editorRef: React.RefObject<HTMLTextAreaElement | null>;
-    isMdvaultMode: boolean;
 }
 
 export function Header({
-    handleNewFile,
-    handleFileOpen,
-    handleExport,
-    handleSaveAs,
-    insertText,
-    isDirty,
-    viewMode,
-    setViewMode,
-    isDarkMode,
-    setIsDarkMode,
-    isFullscreen,
-    setIsFullscreen,
+    editorState,
+    insertTextWithHistory,
     fileInputRef,
-    editorRef,
-    isMdvaultMode
+    editorRef
 }: HeaderProps) {
-    const disabledStyle = 'hidden';
+    const {
+        handleNewFile,
+        handleFileOpen,
+        handleExport,
+        handleSaveAs,
+        isDirty,
+        viewMode,
+        setViewMode,
+        isDarkMode,
+        setIsDarkMode,
+        isFullscreen,
+        setIsFullscreen
+    } = editorState;
     return (
         <header className="h-11 border-b border-border bg-editor-bg flex items-center justify-between px-4 shrink-0 z-30 overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1 min-w-max text-accent">
                 <div className="flex items-center gap-0.5">
-                    <ToolbarButton onClick={handleNewFile} icon={<Plus size={14} />} title="New (Ctrl+N)" className={isMdvaultMode ? disabledStyle : ''} />
+                    <ToolbarButton onClick={handleNewFile} icon={<Plus size={14} />} title="New (Ctrl+N)" />
                     <ToolbarButton onClick={() => {
-                        if (isMdvaultMode) return;
-                        if (window.__TAURI_INTERNALS__) {
+                        if (isTauri()) {
                             handleFileOpen();
                         } else {
                             fileInputRef.current?.click();
                         }
-                    }} icon={<FolderOpen size={14} />} title="Open (Ctrl+O)" className={isMdvaultMode ? disabledStyle : ''} />
+                    }} icon={<FolderOpen size={14} />} title="Open (Ctrl+O)" />
                     <div className="relative">
                         <ToolbarButton onClick={handleExport} icon={<Save size={14} />} title="Save (Ctrl+S)" />
                         {isDirty && (
                             <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
                         )}
                     </div>
-                    <ToolbarButton onClick={handleSaveAs} icon={<SaveAll size={14} />} title="Save As (Ctrl+Shift+S)" className={isMdvaultMode ? disabledStyle : ''} />
+                    <ToolbarButton onClick={handleSaveAs} icon={<SaveAll size={14} />} title="Save As (Ctrl+Shift+S)" />
                 </div>
 
                 <div className="w-px h-4 bg-border mx-1.5" />
 
                 <div className="flex items-center gap-0.5">
-                    <ToolbarButton onClick={() => insertText('# ')} icon={<Hash size={14} />} title="Heading (Ctrl+H)" />
-                    <ToolbarButton onClick={() => insertText('**', '**')} icon={<Bold size={14} />} title="Bold (Ctrl+B)" />
-                    <ToolbarButton onClick={() => insertText('_', '_')} icon={<Italic size={14} />} title="Italic (Ctrl+I)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('# ')} icon={<Hash size={14} />} title="Heading (Ctrl+H)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('**', '**')} icon={<Bold size={14} />} title="Bold (Ctrl+B)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('_', '_')} icon={<Italic size={14} />} title="Italic (Ctrl+I)" />
                 </div>
 
                 <div className="w-px h-4 bg-border mx-1.5" />
 
                 <div className="flex items-center gap-0.5">
                     <ToolbarButton
-                        onClick={() => insertCodeBlock(editorRef, insertText)}
+                        onClick={() => insertCodeBlock(editorRef, insertTextWithHistory)}
                         icon={<Code size={14} />}
                         title="Code (Ctrl+E)"
                     />
-                    <ToolbarButton onClick={() => insertText('[', '](url)')} icon={<LinkIcon size={14} />} title="Link (Ctrl+K)" />
+                    <ToolbarButton onClick={() => insertTextWithHistory('[', '](url)')} icon={<LinkIcon size={14} />} title="Link (Ctrl+K)" />
                 </div>
             </div>
 
@@ -121,7 +111,7 @@ export function Header({
                     <ToolbarButton
                         onClick={() => {
                             setIsFullscreen(!isFullscreen);
-                            if (window.__TAURI_INTERNALS__) {
+                            if (isTauri()) {
                                 getCurrentWindow().setFullscreen(!isFullscreen).catch(e => console.error(e));
                             }
                         }}

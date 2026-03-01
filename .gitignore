@@ -12,13 +12,18 @@ dist
 dist-ssr
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Tauri
+src-tauri/target
+src-tauri/gen
+
+# AI Agents
+.agents
+.gemini
+.agent
+.agents/
+.gemini/
+.agent/
+
+# OS Files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
