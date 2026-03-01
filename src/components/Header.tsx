@@ -2,9 +2,10 @@
 import {
     View, Save, FolderOpen, Plus, Maximize2, Minimize2,
     Bold, Italic, Code, Link as LinkIcon,
-    Hash, Sun, Moon, Pencil, Columns2, SaveAll
+    Hash, Sun, Moon, Pencil, Columns2, SaveAll, Keyboard
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
+import { ShortcutDialog } from './ShortcutDialog';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { insertCodeBlock } from '../utils';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -15,13 +16,17 @@ interface HeaderProps {
     insertTextWithHistory: (before: string, after?: string) => void;
     fileInputRef: React.RefObject<HTMLInputElement | null>;
     editorRef: React.RefObject<HTMLTextAreaElement | null>;
+    showShortcuts: boolean;
+    setShowShortcuts: (v: boolean) => void;
 }
 
 export function Header({
     editorState,
     insertTextWithHistory,
     fileInputRef,
-    editorRef
+    editorRef,
+    showShortcuts,
+    setShowShortcuts
 }: HeaderProps) {
     const {
         handleNewFile,
@@ -118,8 +123,18 @@ export function Header({
                         icon={isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                         title="Fullscreen (F11)"
                     />
+                    <ToolbarButton
+                        onClick={() => setShowShortcuts(true)}
+                        icon={<Keyboard size={14} />}
+                        title="Shortcuts"
+                    />
                 </div>
             </div>
+
+            <ShortcutDialog
+                isOpen={showShortcuts}
+                onClose={() => setShowShortcuts(false)}
+            />
         </header>
     );
 }

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useDeferredValue } from 'react';
+import { useRef, useEffect, useDeferredValue, useState } from 'react';
 import { Header } from './components/Header';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
@@ -21,6 +21,7 @@ export default function App() {
 
   const editorState = useMarkdownEditor(editorRef);
   const { markdown, fileName, viewMode, isDirty, showCloseConfirm, showNewFileConfirm, showOpenFileConfirm, confirmNewFile, confirmOpenFile } = editorState;
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const insertTextWithHistory = (before: string, after: string = '') => {
     editorState.insertText(before, after, editorState.pushToHistory, editorState.nextCursorRef);
@@ -161,6 +162,8 @@ export default function App() {
         insertTextWithHistory={insertTextWithHistory}
         fileInputRef={fileInputRef}
         editorRef={editorRef}
+        showShortcuts={showShortcuts}
+        setShowShortcuts={setShowShortcuts}
       />
 
       <main className={cn(
