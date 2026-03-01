@@ -38,7 +38,7 @@ export function useHistory({ onRestore }: UseHistoryOptions) {
         if (immediate) {
             commit();
         } else {
-            debounceTimerRef.current = setTimeout(commit, 300);
+            debounceTimerRef.current = setTimeout(commit, 800);
         }
     }, []);
 
@@ -76,5 +76,7 @@ export function useHistory({ onRestore }: UseHistoryOptions) {
         nextCursorRef.current = null;
     }, []);
 
-    return { push, undo, redo, reset, nextCursorRef };
+    const lastValue = historyRef.current[historyIndexRef.current]?.value ?? '';
+
+    return { push, undo, redo, reset, nextCursorRef, lastValue };
 }

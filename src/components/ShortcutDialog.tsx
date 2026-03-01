@@ -18,7 +18,7 @@ const shortcuts = [
     {
         category: 'Edit', items: [
             { keys: 'Ctrl+Z', label: 'Undo' },
-            { keys: 'Ctrl+Shift+Z', label: 'Redo' },
+            { keys: 'Ctrl+Y, Ctrl+Shift+Z', label: 'Redo' },
             { keys: 'Ctrl+B', label: 'Bold' },
             { keys: 'Ctrl+I', label: 'Italic' },
             { keys: 'Ctrl+D', label: 'Strikethrough' },

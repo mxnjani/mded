@@ -51,7 +51,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         return false;
     });
 
-    const { push: pushToHistory, undo, redo, reset: resetHistory, nextCursorRef } = useHistory({
+    const { push: pushToHistory, undo, redo, reset: resetHistory, nextCursorRef, lastValue } = useHistory({
         onRestore: (md) => {
             setMarkdown(md);
             setIsDirty(true);
@@ -431,5 +431,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         undo,
         redo,
         nextCursorRef,
+        lastValue,
     };
 }

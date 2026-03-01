@@ -9,7 +9,7 @@ interface EditorProps {
 }
 
 export const Editor = React.memo(function Editor({ editorState, editorRef }: EditorProps) {
-    const { markdown, setMarkdown, pushToHistory, undo, redo, nextCursorRef } = editorState;
+    const { markdown, setMarkdown, pushToHistory, undo, redo, nextCursorRef, lastValue } = editorState;
     useLayoutEffect(() => {
         if (nextCursorRef.current !== null && editorRef.current) {
             const scrollTop = editorRef.current.scrollTop;
@@ -36,7 +36,15 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const { value, selectionStart } = e.target;
         setMarkdown(value);
-        pushToHistory(value, selectionStart);
+
+        // Detect if action was a paste/bulk delete
+        const isBulk = Math.abs(value.length - (lastValue || markdown).length) > 1;
+        // Detect if the user typed a boundary character (Space, Enter, Punctuation)
+        const lastChar = value.substring(selectionStart - 1, selectionStart);
+        const isBoundary = /[\s\n.,;?!()[\]{}"'\-]/.test(lastChar);
+
+        const shouldForceImmediate = isBulk || isBoundary;
+        pushToHistory(value, selectionStart, shouldForceImmediate);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
