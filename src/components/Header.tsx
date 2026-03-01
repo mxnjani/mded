@@ -1,7 +1,7 @@
 
 import {
     View, Save, FolderOpen, Plus, Maximize2, Minimize2,
-    Bold, Italic, Code, Link as LinkIcon, Strikethrough,
+    Bold, Italic, Code, Link as LinkIcon, Strikethrough, Quote,
     Sun, Moon, Pencil, Columns2, SaveAll, Keyboard, List, ListOrdered, ListChecks
 } from 'lucide-react';
 import { ToolbarButton } from './ToolbarButton';
@@ -73,6 +73,7 @@ export function Header({
                 <div className="w-px h-4 bg-border mx-1.5" />
 
                 <div className="flex items-center gap-0.5">
+                    <ToolbarButton onClick={() => insertTextWithHistory('\n> ')} icon={<Quote size={14} />} title="Blockquote (Ctrl+Q)" />
                     <ToolbarButton
                         onClick={() => insertCodeBlock(editorRef, insertTextWithHistory)}
                         icon={<Code size={14} />}
