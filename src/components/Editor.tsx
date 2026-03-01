@@ -58,9 +58,8 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
             return;
         }
 
-        // Redo: Ctrl+Y or Ctrl+Shift+Z
-        if ((e.key === 'y' && (e.ctrlKey || e.metaKey)) ||
-            (e.key === 'z' && (e.ctrlKey || e.metaKey) && e.shiftKey)) {
+        // Redo: Ctrl+Y
+        if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             redo();
             return;
