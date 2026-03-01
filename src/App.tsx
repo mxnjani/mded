@@ -42,30 +42,35 @@ export default function App() {
     }
   }, []);
 
-  const cycleHeading = () => {
+  const applyHeading = (level: number) => {
     const textarea = editorRef.current;
     if (!textarea) return;
-    const { value, selectionStart } = textarea;
+    const { value, selectionStart, selectionEnd } = textarea;
     const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
-    const lineEnd = value.indexOf('\n', selectionStart);
-    const line = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd);
+    const lineEnd = value.indexOf('\n', selectionEnd);
+    const endPos = lineEnd === -1 ? value.length : lineEnd;
+    const line = value.substring(lineStart, endPos);
 
-    const headingMatch = line.match(/^(#{1,4})\s/);
+    const headingMatch = line.match(/^(#{1,6})\s/);
     let newLine: string;
     let cursorOffset: number;
 
+    const prefix = '#'.repeat(level) + ' ';
+
     if (!headingMatch) {
-      newLine = '# ' + line;
-      cursorOffset = 2;
-    } else if (headingMatch[1].length < 4) {
-      newLine = '#' + line;
-      cursorOffset = 1;
+      newLine = prefix + line;
+      cursorOffset = prefix.length;
     } else {
-      newLine = line.replace(/^#{1,4}\s/, '');
-      cursorOffset = -(headingMatch[1].length + 1);
+      if (headingMatch[1].length === level) {
+        newLine = line.replace(/^#{1,6}\s/, '');
+        cursorOffset = -headingMatch[0].length;
+      } else {
+        newLine = line.replace(/^#{1,6}\s/, prefix);
+        cursorOffset = prefix.length - headingMatch[0].length;
+      }
     }
 
-    const newValue = value.substring(0, lineStart) + newLine + value.substring(lineEnd === -1 ? value.length : lineEnd);
+    const newValue = value.substring(0, lineStart) + newLine + value.substring(endPos);
     const newCursor = selectionStart + cursorOffset;
     editorState.setMarkdown(newValue);
     editorState.pushToHistory(newValue, newCursor, true);
@@ -95,6 +100,22 @@ export default function App() {
 
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
         switch (e.key.toLowerCase()) {
+          case '1':
+            e.preventDefault();
+            applyHeading(1);
+            break;
+          case '2':
+            e.preventDefault();
+            applyHeading(2);
+            break;
+          case '3':
+            e.preventDefault();
+            applyHeading(3);
+            break;
+          case '4':
+            e.preventDefault();
+            applyHeading(4);
+            break;
           case 'b':
             e.preventDefault();
             insertTextWithHistory('**', '**');
@@ -102,10 +123,6 @@ export default function App() {
           case 'i':
             e.preventDefault();
             insertTextWithHistory('_', '_');
-            break;
-          case 'h':
-            e.preventDefault();
-            cycleHeading();
             break;
           case 'd':
             e.preventDefault();

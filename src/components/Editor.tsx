@@ -64,11 +64,19 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
             const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
             const currentLine = value.substring(lineStart, selectionStart);
 
-            const unorderedMatch = currentLine.match(/^(\s*)([-*+])\s/);
+            const taskMatch = currentLine.match(/^(\s*)([-*+])\s+\[([ xX])\]\s/);
+            const unorderedMatch = taskMatch ? null : currentLine.match(/^(\s*)([-*+])\s/);
             const orderedMatch = currentLine.match(/^(\s*)(\d+)\.\s/);
 
-            if (unorderedMatch || orderedMatch) {
-                const lineContent = currentLine.replace(/^(\s*)([-*+]|\d+\.)\s/, '');
+            if (taskMatch || unorderedMatch || orderedMatch) {
+                let lineContent = '';
+                if (taskMatch) {
+                    lineContent = currentLine.replace(/^(\s*)([-*+])\s+\[([ xX])\]\s/, '');
+                } else if (orderedMatch) {
+                    lineContent = currentLine.replace(/^(\s*)(\d+)\.\s/, '');
+                } else if (unorderedMatch) {
+                    lineContent = currentLine.replace(/^(\s*)([-*+])\s/, '');
+                }
 
                 e.preventDefault();
 
@@ -81,7 +89,11 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
                 }
 
                 let prefix: string;
-                if (orderedMatch) {
+                if (taskMatch) {
+                    const indent = taskMatch[1];
+                    const marker = taskMatch[2];
+                    prefix = `${indent}${marker} [ ] `;
+                } else if (orderedMatch) {
                     const indent = orderedMatch[1];
                     const num = parseInt(orderedMatch[2], 10);
                     prefix = `${indent}${num + 1}. `;

@@ -353,6 +353,23 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                switch (e.key) {
+                    case '1':
+                        e.preventDefault();
+                        setViewMode('editor');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        setViewMode('split');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        setViewMode('preview');
+                        break;
+                }
+            }
+
             if (e.metaKey || e.ctrlKey) {
                 switch (e.key.toLowerCase()) {
                     case 's':
@@ -370,18 +387,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                     case 'n':
                         e.preventDefault();
                         handleNewFile();
-                        break;
-                    case '1':
-                        e.preventDefault();
-                        setViewMode('editor');
-                        break;
-                    case '2':
-                        e.preventDefault();
-                        setViewMode('split');
-                        break;
-                    case '3':
-                        e.preventDefault();
-                        setViewMode('preview');
                         break;
                 }
             }

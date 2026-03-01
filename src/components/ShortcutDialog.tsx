@@ -22,7 +22,7 @@ const shortcuts = [
             { keys: 'Ctrl+B', label: 'Bold' },
             { keys: 'Ctrl+I', label: 'Italic' },
             { keys: 'Ctrl+D', label: 'Strikethrough' },
-            { keys: 'Ctrl+H', label: 'Heading (cycle H1–H4)' },
+            { keys: 'Ctrl+1..4', label: 'Apply Headings 1–4' },
             { keys: 'Ctrl+E', label: 'Code' },
             { keys: 'Ctrl+K', label: 'Link' },
             { keys: 'Ctrl+Q', label: 'Blockquote' },
@@ -34,9 +34,9 @@ const shortcuts = [
     },
     {
         category: 'View', items: [
-            { keys: 'Ctrl+1', label: 'Editor only' },
-            { keys: 'Ctrl+2', label: 'Split view' },
-            { keys: 'Ctrl+3', label: 'Preview only' },
+            { keys: 'Alt+1', label: 'Editor only' },
+            { keys: 'Alt+2', label: 'Split view' },
+            { keys: 'Alt+3', label: 'Preview only' },
             { keys: 'F11', label: 'Fullscreen' },
         ]
     },
