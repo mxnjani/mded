@@ -30,6 +30,7 @@
     "core:window:allow-set-title",
     "core:window:allow-show",
     "core:window:allow-maximize",
-    "core:event:allow-listen"
+    "core:event:allow-listen",
+    "shell:default"
   ]
 }

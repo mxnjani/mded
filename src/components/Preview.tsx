@@ -9,6 +9,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { FloatingToc } from './FloatingToc';
+import { open as shellOpen } from '@tauri-apps/plugin-shell';
 import 'katex/dist/katex.min.css';
 
 
@@ -88,7 +89,7 @@ export const Preview = React.memo(function Preview({ markdown, previewRef }: Pre
                     onClick={(e) => {
                         e.preventDefault();
                         if (href) {
-                            window.open(href, '_blank', 'noopener,noreferrer');
+                            shellOpen(href).catch(console.error);
                         }
                     }}
                 >
