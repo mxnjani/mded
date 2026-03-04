@@ -42,6 +42,17 @@ fn show_maximized_native(window: tauri::Window, is_dark_mode: bool) {
 }
 
 #[tauri::command]
+fn set_native_theme(window: tauri::Window, is_dark_mode: bool) {
+    if is_dark_mode {
+        let _ = window.set_background_color(Some(tauri::utils::config::Color(10, 10, 10, 255)));
+        let _ = window.set_theme(Some(tauri::Theme::Dark));
+    } else {
+        let _ = window.set_background_color(Some(tauri::utils::config::Color(255, 255, 255, 255)));
+        let _ = window.set_theme(Some(tauri::Theme::Light));
+    }
+}
+
+#[tauri::command]
 async fn fetch_link_title(url: String) -> Result<String, String> {
     let client = reqwest::Client::builder()
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -96,6 +107,7 @@ pub fn run() {
             close_app,
             get_launch_file,
             show_maximized_native,
+            set_native_theme,
             fetch_link_title
         ])
         .on_window_event(|window, event| {

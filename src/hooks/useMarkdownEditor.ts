@@ -183,21 +183,29 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         init();
     }, []);
 
-    // Persist state to localStorage and sync dark mode class
+    // Sync dark mode to OS and UI
+    useEffect(() => {
+        localStorage.setItem('mded_darkmode', String(isDarkMode));
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        
+        // Dynamically update the OS title window theme when toggled at runtime
+        if (isTauri()) {
+            invoke('set_native_theme', { isDarkMode }).catch(console.error);
+        }
+    }, [isDarkMode]);
+
+    // Persist state to localStorage
     useEffect(() => {
         localStorage.setItem('mded_content', markdown);
         localStorage.setItem('mded_original_content', originalMarkdown);
         localStorage.setItem('mded_filename', fileName);
         localStorage.setItem('mded_viewmode', viewMode);
         localStorage.setItem('mded_isdirty', String(isDirty));
-        localStorage.setItem('mded_darkmode', String(isDarkMode));
-
-        if (isDarkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [markdown, originalMarkdown, fileName, viewMode, isDarkMode, isDirty]);
+    }, [markdown, originalMarkdown, fileName, viewMode, isDirty]);
 
     /**
      * Insert text at the current cursor position in the editor.
