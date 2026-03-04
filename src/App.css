@@ -4,23 +4,33 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-bg: #ffffff;
-  --color-editor-bg: #ffffff;
-  --color-border: #e4e4e7;
-  --color-accent: #18181b;
-  --color-muted: #71717a;
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
+  --color-bg: var(--app-bg);
+  --color-editor-bg: var(--app-editor-bg);
+  --color-border: var(--app-border);
+  --color-accent: var(--app-accent);
+  --color-muted: var(--app-muted);
+  --color-primary: var(--app-primary);
+  --color-primary-hover: var(--app-primary-hover);
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+:root {
+  --app-bg: #ffffff;
+  --app-editor-bg: #ffffff;
+  --app-border: #e4e4e7;
+  --app-accent: #18181b;
+  --app-muted: #71717a;
+  --app-primary: #3b82f6;
+  --app-primary-hover: #2563eb;
+}
+
 .dark {
-  --color-bg: #09090b;
-  --color-editor-bg: #09090b;
-  --color-border: #27272a;
-  --color-accent: #fafafa;
-  --color-muted: #a1a1aa;
+  --app-bg: #09090b;
+  --app-editor-bg: #09090b;
+  --app-border: #27272a;
+  --app-accent: #fafafa;
+  --app-muted: #a1a1aa;
   color-scheme: dark;
 }
 
@@ -250,8 +260,8 @@ textarea:focus {
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 4px;
-  margin-bottom: 8px;
+  margin-top: 8px;
+  margin-bottom: 16px;
 }
 
 ::-webkit-scrollbar-thumb {
