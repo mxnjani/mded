@@ -16,7 +16,7 @@ export default function App() {
   const previewRef = useRef<HTMLDivElement>(null);
 
   const editorState = useMarkdownEditor(editorRef);
-  const { markdown, fileName, viewMode, isDirty } = editorState;
+  const { markdown, fileName, viewMode, isDirty, isDarkMode } = editorState;
   const { openModal, closeModal } = useModal();
 
   const insertTextWithHistory = useCallback((before: string, after: string = '') => {
@@ -38,21 +38,14 @@ export default function App() {
 
   const deferredMarkdown = useDeferredValue(markdown);
 
-  // Startup: Stay hidden until React UI is ready and painted, then show natively maximized
+  // Startup: Safely show the native window with the correct background color to avoid flashes
+  const hasShownRef = useRef(false);
   useEffect(() => {
-    if (isTauri()) {
-      // Double requestAnimationFrame ensures the browser has calculated layout AND painted the frame
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          // A tiny timeout gives the OS WebView compositor a moment to catch up
-          setTimeout(() => {
-            invoke('show_maximized_native').catch(console.error);
-            getCurrentWindow().setFocus().catch(console.error);
-          }, 50);
-        });
-      });
+    if (isTauri() && !hasShownRef.current) {
+      hasShownRef.current = true;
+      invoke('show_maximized_native', { isDarkMode }).catch(console.error);
     }
-  }, []);
+  }, [isDarkMode]);
 
   const applyHeading = useCallback((level: number) => {
     const textarea = editorRef.current;

@@ -28,7 +28,14 @@ fn get_launch_file() -> Option<String> {
 }
 
 #[tauri::command]
-fn show_maximized_native(window: tauri::Window) {
+fn show_maximized_native(window: tauri::Window, is_dark_mode: bool) {
+    if is_dark_mode {
+        let _ = window.set_background_color(Some(tauri::utils::config::Color(10, 10, 10, 255)));
+        let _ = window.set_theme(Some(tauri::Theme::Dark));
+    } else {
+        let _ = window.set_background_color(Some(tauri::utils::config::Color(255, 255, 255, 255)));
+        let _ = window.set_theme(Some(tauri::Theme::Light));
+    }
     let _ = window.show();
     let _ = window.maximize();
     let _ = window.set_focus();

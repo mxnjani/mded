@@ -55,8 +55,11 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
 
     const [isDarkMode, setIsDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('mded_darkmode') === 'true' ||
-                window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const saved = localStorage.getItem('mded_darkmode');
+            if (saved !== null) {
+                return saved === 'true';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
         }
         return false;
     });
