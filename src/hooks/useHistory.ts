@@ -71,7 +71,7 @@ export function useHistory({ onRestore }: UseHistoryOptions) {
             clearTimeout(debounceTimerRef.current);
             debounceTimerRef.current = null;
         }
-        historyRef.current = [{ value, cursor: 0 }];
+        historyRef.current = [{ value, cursor: value.trimEnd().length }];
         historyIndexRef.current = 0;
         nextCursorRef.current = null;
     }, []);
