@@ -70,7 +70,6 @@ function isAbsolutePath(p: string): boolean {
 /** Resolve src to an absolute filesystem path, or return null */
 function resolveToAbsolute(src: string, filePath: string | null | undefined): string | null {
     try {
-        // Strip file:// or file:/// prefix if present
         let cleanedSrc = src;
         if (cleanedSrc.startsWith('file:///')) {
             cleanedSrc = cleanedSrc.substring(8);
@@ -78,7 +77,6 @@ function resolveToAbsolute(src: string, filePath: string | null | undefined): st
             cleanedSrc = cleanedSrc.substring(7);
         }
 
-        // Must decode URI in case it has %20 spaces etc. 
         const decoded = decodeURI(cleanedSrc);
         if (isAbsolutePath(decoded)) return decoded;
         if (!filePath) return null;

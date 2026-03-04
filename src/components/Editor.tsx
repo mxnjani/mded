@@ -37,9 +37,7 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
         const { value, selectionStart } = e.target;
         setMarkdown(value);
 
-        // Detect if action was a paste/bulk delete
         const isBulk = Math.abs(value.length - (lastValue || markdown).length) > 1;
-        // Detect if the user typed a boundary character (Space, Enter, Punctuation)
         const lastChar = value.substring(selectionStart - 1, selectionStart);
         const isBoundary = /[\s\n.,;?!()[\]{}"'\-]/.test(lastChar);
 
@@ -51,14 +49,12 @@ export const Editor = React.memo(function Editor({ editorState, editorRef }: Edi
         const textarea = editorRef.current;
         if (!textarea) return;
 
-        // Undo: Ctrl+Z
         if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.shiftKey) {
             e.preventDefault();
             undo();
             return;
         }
 
-        // Redo: Ctrl+Y
         if (e.key === 'y' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             redo();

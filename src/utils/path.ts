@@ -7,13 +7,11 @@ export function relativePath(fromDir: string, toPath: string): string {
     const fromParts = fromDir.replace(/\\/g, '/').split('/').filter(Boolean);
     const toParts = toPath.replace(/\\/g, '/').split('/').filter(Boolean);
 
-    // Keep Windows drive letter casing consistent
     if (fromParts.length > 0 && toParts.length > 0) {
         if (fromParts[0].toLowerCase() === toParts[0].toLowerCase()) {
             fromParts[0] = fromParts[0].toLowerCase();
             toParts[0] = toParts[0].toLowerCase();
         } else if (fromParts[0].match(/^[a-zA-Z]:$/) && toParts[0].match(/^[a-zA-Z]:$/)) {
-            // Different drives, return absolute path
             return toPath;
         }
     }
@@ -31,7 +29,6 @@ export function relativePath(fromDir: string, toPath: string): string {
     }
 
     const result = upString + remaining;
-    // URL encode encodeURI preserves slashes.
     return encodeURI(result);
 }
 
@@ -40,7 +37,6 @@ export function resolvePath(baseDir: string, relPath: string): string {
         return relPath;
     }
 
-    // Windows absolute path e.g. C:\ or Unix /
     if (relPath.match(/^[a-zA-Z]:[/\\]/) || relPath.startsWith('/')) {
         return relPath;
     }

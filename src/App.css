@@ -45,10 +45,6 @@ body {
   outline: none !important;
 }
 
-textarea:focus {
-  outline: none !important;
-}
-
 .markdown-body {
   font-family: var(--font-sans);
   color: var(--color-accent);
@@ -64,7 +60,6 @@ textarea:focus {
   margin-bottom: 0 !important;
 }
 
-/* GitHub Flavored Markdown heading styles */
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3,
@@ -219,7 +214,6 @@ textarea:focus {
   background-color: var(--color-editor-bg);
 }
 
-/* Base style for hr following GFM spec */
 .markdown-body hr {
   height: 0.25em;
   padding: 0;
@@ -228,7 +222,6 @@ textarea:focus {
   border: 0;
 }
 
-/* Modal Animations */
 @keyframes backdrop-fade {
   from {
     opacity: 0;
@@ -243,7 +236,6 @@ textarea:focus {
   from {
     opacity: 0;
     transform: translateY(16px) translateZ(0);
-    /* Using translateZ to force hardware acceleration cleanly */
   }
 
   to {
@@ -252,7 +244,6 @@ textarea:focus {
   }
 }
 
-/* Sleek, thin, borderless scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -273,16 +264,13 @@ textarea:focus {
   background-color: color-mix(in srgb, var(--color-accent) 25%, transparent);
 }
 
-/* Hide scrollbar on specific elements */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
 .no-scrollbar {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
 .animate-backdrop {

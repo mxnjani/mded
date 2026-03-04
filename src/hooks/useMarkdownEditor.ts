@@ -13,8 +13,6 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export type ViewMode = 'editor' | 'split' | 'preview';
 
-
-
 const DEFAULT_MARKDOWN = `# New Document
 
 Start typing your markdown here...
@@ -64,7 +62,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         return false;
     });
 
-    // Refs to avoid stale closures in event listeners
     const isDirtyRef = useRef(isDirty);
     useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
 
@@ -91,10 +88,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         },
     });
 
-    /**
-     * Single helper to load file content into the editor, replacing
-     * the previous 5x duplicated block across the hook.
-     */
     const applyFileContent = useCallback((content: string, path: string) => {
         setMarkdown(content);
         setOriginalMarkdown(content);
@@ -149,7 +142,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         }
     }, [filePath, editorRef, pushToHistory, nextCursorRef]);
 
-    // Startup: load launch file or restore from localStorage
     useEffect(() => {
         const init = async () => {
             if (isTauri()) {
@@ -188,7 +180,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         init();
     }, []);
 
-    // Sync dark mode to OS and UI
     useEffect(() => {
         localStorage.setItem('mded_darkmode', String(isDarkMode));
         if (isDarkMode) {
@@ -197,13 +188,11 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             document.documentElement.classList.remove('dark');
         }
 
-        // Dynamically update the OS title window theme when toggled at runtime
         if (isTauri()) {
             invoke('set_native_theme', { isDarkMode }).catch(console.error);
         }
     }, [isDarkMode]);
 
-    // Persist state to localStorage
     useEffect(() => {
         localStorage.setItem('mded_content', markdown);
         localStorage.setItem('mded_original_content', originalMarkdown);
@@ -212,10 +201,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         localStorage.setItem('mded_isdirty', String(isDirty));
     }, [markdown, originalMarkdown, fileName, viewMode, isDirty]);
 
-    /**
-     * Insert text at the current cursor position in the editor.
-     * Uses the hook's own pushToHistory/nextCursorRef directly.
-     */
     const insertText = useCallback((before: string, after: string = '') => {
         const textarea = editorRef.current;
         if (!textarea) return;
@@ -409,7 +394,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         }
     }, [applyFileContent, requestOpenFile]);
 
-    // Tauri: listen for open-file events and native drag-drop
     useEffect(() => {
         if (!isTauri()) return;
 
@@ -456,7 +440,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         };
     }, [applyFileContent, requestOpenFile]);
 
-    // Global keyboard shortcuts: file ops, view mode, fullscreen
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
@@ -515,6 +498,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         fileName,
         filePath,
         isDirty,
+        isDirtyRef,
         viewMode,
         setViewMode,
         isDarkMode,

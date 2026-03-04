@@ -7,7 +7,7 @@ import { ToolbarButton } from './ToolbarButton';
 import { ShortcutDialog } from './ShortcutDialog';
 import { InsertMediaDialog } from './InsertMediaDialog';
 import { RecentFilesDialog } from './RecentFilesDialog';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { insertCodeBlock, isTauri } from '../utils';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -81,34 +81,28 @@ export function Header({
 
     const { openModal, closeModal } = useModal();
 
-    const openMediaDialog = () => openModal(
+    const openMediaDialog = useCallback(() => openModal(
         <InsertMediaDialog
             onClose={closeModal}
             onInsert={(markdown) => {
-                const textarea = editorRef.current;
-                let before = markdown;
-                let after = '';
-                if (textarea && textarea.selectionStart !== textarea.selectionEnd) {
-                    after = '';
-                }
-                insertTextWithHistory(before, after);
+                insertTextWithHistory(markdown);
             }}
             currentFilePath={filePath || null}
         />
-    );
+    ), [openModal, closeModal, insertTextWithHistory, filePath]);
 
-    const openRecentDialog = () => openModal(
+    const openRecentDialog = useCallback(() => openModal(
         <RecentFilesDialog
             onClose={closeModal}
             recentFiles={recentFiles}
             onOpenRecent={openRecentFile}
             onClearRecent={editorState.clearRecentFiles}
         />
-    );
+    ), [openModal, closeModal, recentFiles, openRecentFile, editorState.clearRecentFiles]);
 
-    const openShortcutDialog = () => openModal(
+    const openShortcutDialog = useCallback(() => openModal(
         <ShortcutDialog onClose={closeModal} />
-    );
+    ), [openModal, closeModal]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -126,7 +120,7 @@ export function Header({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [openModal, closeModal, recentFiles, openRecentFile, filePath, insertTextWithHistory, editorRef]);
+    }, [openMediaDialog, openRecentDialog, openShortcutDialog]);
 
     return (
         <header

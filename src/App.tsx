@@ -16,7 +16,7 @@ export default function App() {
   const previewRef = useRef<HTMLDivElement>(null);
 
   const editorState = useMarkdownEditor(editorRef);
-  const { markdown, fileName, viewMode, isDirty, isDarkMode } = editorState;
+  const { markdown, fileName, viewMode, isDirty, isDirtyRef, isDarkMode } = editorState;
   const { openModal, closeModal } = useModal();
 
   const insertTextWithHistory = useCallback((before: string, after: string = '') => {
@@ -33,12 +33,8 @@ export default function App() {
     editorState.insertText(actualBefore, after);
   }, [editorState.insertText]);
 
-  const isDirtyRef = useRef(isDirty);
-  useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
-
   const deferredMarkdown = useDeferredValue(markdown);
 
-  // Startup: Safely show the native window with the correct background color to avoid flashes
   const hasShownRef = useRef(false);
   useEffect(() => {
     if (isTauri() && !hasShownRef.current) {

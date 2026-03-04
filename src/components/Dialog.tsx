@@ -35,7 +35,6 @@ export function Dialog({ isOpen = true, onClose, title, children, className = ''
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div className={`bg-bg border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden w-full max-w-md mx-4 animate-modal-show transform-gpu antialiased ${className}`}>
-                {/* Header */}
                 <div className="px-6 py-5 border-b border-border bg-bg/50 flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-accent m-0 flex items-center gap-2">
                         {title}
@@ -49,12 +48,10 @@ export function Dialog({ isOpen = true, onClose, title, children, className = ''
                     </button>
                 </div>
 
-                {/* Body */}
                 <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
                     {children}
                 </div>
 
-                {/* Footer */}
                 {footer && (
                     <div className="px-6 py-4 bg-bg/50 border-t border-border flex justify-end gap-3 mt-auto">
                         {footer}

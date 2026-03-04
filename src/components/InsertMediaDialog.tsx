@@ -26,17 +26,14 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
     const [isImage, setIsImage] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
 
-    // Download and error states
     const [downloadState, setDownloadState] = useState<'idle' | 'downloading' | 'confirming' | 'error'>('idle');
     const [downloadedPath, setDownloadedPath] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
 
-    // Auto-detect image when URL changes
     useEffect(() => {
         setIsImage(isImageUrl(url));
     }, [url]);
 
-    // Auto-fetch link title after a short delay when URL changes
     useEffect(() => {
         if (!url || !url.startsWith('http') || isImage || altText) return;
 
@@ -76,7 +73,6 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
 
             if (selected && typeof selected === 'string') {
                 let finalPath = selected;
-                // Auto-copy local file to current folder if picking via dialog
                 if (isTauri()) {
                     if (currentFilePath) {
                         try {
@@ -85,11 +81,9 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
                                 const fileName = await basename(selected);
                                 const newFilePath = await join(currentDir, fileName);
 
-                                // Prevent copying to itself if picked from same folder
                                 if (newFilePath !== selected) {
                                     await copyFile(selected, newFilePath);
                                 }
-                                // Always make the url a relative path
                                 finalPath = relativePath(currentDir, newFilePath) || `./${fileName}`;
                             }
                         } catch (e) {
@@ -110,7 +104,6 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
                     setAltText(filename.split('.')[0] || filename);
                 }
 
-                // Set isImage here explicitly so it updates immediately alongside the input
                 setIsImage(isImageUrl(finalPath));
             }
         } catch (err) {
@@ -133,7 +126,6 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
             const currentDir = getDirname(currentFilePath);
             if (!currentDir) throw new Error("Could not determine current directory");
 
-            // Try to extract a filename from the URL, or default to a generated name
             let filename = url.split('/').pop()?.split('?')[0] || `download_${Date.now()}`;
             if (!filename.includes('.')) {
                 filename += isImage ? '.png' : '.tmp';
@@ -168,7 +160,6 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
                 }
                 setIsImage(isImageUrl(downloadedPath));
 
-                // Auto-set alt text from downloaded filename
                 const filename = downloadedPath.split(/[/\\]/).pop() || '';
                 setAltText(filename.split('.')[0] || filename);
             }
@@ -192,12 +183,9 @@ export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: Insert
     const handleInsert = async () => {
         if (!url) return;
 
-        // Sanitize the URL to avoid markdown parser issues with backslashes and spaces
         let cleanUrl = url.replace(/\\/g, '/');
 
-        // Normalize relative local paths to start with ./
         if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://') && !cleanUrl.startsWith('/') && !cleanUrl.startsWith('.')) {
-            // Let's also check if it's an absolute Windows path (e.g. C:/) to not prepend ./
             if (!/^[A-Za-z]:\//.test(cleanUrl)) {
                 cleanUrl = `./${cleanUrl}`;
             }

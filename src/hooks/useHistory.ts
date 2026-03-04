@@ -15,17 +15,11 @@ export function useHistory({ onRestore }: UseHistoryOptions) {
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const nextCursorRef = useRef<number | null>(null);
 
-    /**
-     * Push a new history entry. Use `immediate=true` for structural
-     * changes (list continuation, toolbar actions). Typed characters
-     * are debounced (300ms) so undo restores natural chunks.
-     */
     const push = useCallback((value: string, cursor: number, immediate = false) => {
         const commit = () => {
             const history = historyRef.current;
             const index = historyIndexRef.current;
             const newHistory = history.slice(0, index + 1);
-            // Avoid duplicate consecutive entries
             if (newHistory.length > 0 && newHistory[newHistory.length - 1].value === value) return;
             newHistory.push({ value, cursor });
             if (newHistory.length > 200) newHistory.shift();
