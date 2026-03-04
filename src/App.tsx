@@ -145,6 +145,10 @@ export default function App() {
             e.preventDefault();
             insertTextWithHistory('\n- ');
             break;
+          case 'h':
+            e.preventDefault();
+            insertTextWithHistory('\n---\n');
+            break;
         }
       }
 
@@ -154,13 +158,13 @@ export default function App() {
             e.preventDefault();
             insertTextWithHistory('\n1. ');
             break;
-          case 'h':
-            e.preventDefault();
-            insertTextWithHistory('\n---\n');
-            break;
           case 't':
             e.preventDefault();
             insertTextWithHistory('\n- [ ] ');
+            break;
+          case 'd':
+            e.preventDefault();
+            editorState.setIsDarkMode((prev: boolean) => !prev);
             break;
         }
       }

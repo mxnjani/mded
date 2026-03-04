@@ -31,7 +31,7 @@ export function Dialog({ isOpen = true, onClose, title, children, className = ''
 
     return createPortal(
         <div
-            className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm animate-backdrop"
+            className="fixed inset-0 z-50 grid place-items-center bg-white/40 dark:bg-black/60 backdrop-blur-sm animate-backdrop"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div className={`bg-bg border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden w-full max-w-md mx-4 animate-modal-show transform-gpu antialiased ${className}`}>

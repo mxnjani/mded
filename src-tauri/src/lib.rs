@@ -30,7 +30,7 @@ fn get_launch_file() -> Option<String> {
 #[tauri::command]
 fn show_maximized_native(window: tauri::Window, is_dark_mode: bool) {
     if is_dark_mode {
-        let _ = window.set_background_color(Some(tauri::utils::config::Color(10, 10, 10, 255)));
+        let _ = window.set_background_color(Some(tauri::utils::config::Color(9, 9, 11, 255)));
         let _ = window.set_theme(Some(tauri::Theme::Dark));
     } else {
         let _ = window.set_background_color(Some(tauri::utils::config::Color(255, 255, 255, 255)));
@@ -44,7 +44,7 @@ fn show_maximized_native(window: tauri::Window, is_dark_mode: bool) {
 #[tauri::command]
 fn set_native_theme(window: tauri::Window, is_dark_mode: bool) {
     if is_dark_mode {
-        let _ = window.set_background_color(Some(tauri::utils::config::Color(10, 10, 10, 255)));
+        let _ = window.set_background_color(Some(tauri::utils::config::Color(9, 9, 11, 255)));
         let _ = window.set_theme(Some(tauri::Theme::Dark));
     } else {
         let _ = window.set_background_color(Some(tauri::utils::config::Color(255, 255, 255, 255)));
@@ -83,6 +83,26 @@ async fn fetch_link_title(url: String) -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+async fn download_file(url: String, target_path: String) -> Result<(), String> {
+    let client = reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+    
+    if !resp.status().is_success() {
+        return Err(format!("Download failed with status: {}", resp.status()));
+    }
+
+    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+    
+    std::fs::write(&target_path, bytes).map_err(|e| format!("Failed to save file: {}", e))?;
+    
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -108,7 +128,8 @@ pub fn run() {
             get_launch_file,
             show_maximized_native,
             set_native_theme,
-            fetch_link_title
+            fetch_link_title,
+            download_file
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

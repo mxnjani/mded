@@ -5,24 +5,22 @@
 
 @theme {
   --color-bg: #ffffff;
-  --color-editor-bg: #fafafa;
-  --color-border: #e2e8f0;
-  --color-accent: #0f172a;
-  --color-muted: #64748b;
+  --color-editor-bg: #ffffff;
+  --color-border: #e4e4e7;
+  --color-accent: #18181b;
+  --color-muted: #71717a;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --color-scrollbar-hover: #a3a3a3;
-  --color-scrollbar: #d4d4d4;
 }
 
 .dark {
-  --color-bg: #0a0a0a;
-  --color-editor-bg: #171717;
-  --color-border: #333333;
-  --color-accent: #e5e5e5;
-  --color-muted: #d4d4d4;
-  --color-scrollbar-hover: #525252;
-  --color-scrollbar: #333333;
+  --color-bg: #09090b;
+  --color-editor-bg: #09090b;
+  --color-border: #27272a;
+  --color-accent: #fafafa;
+  --color-muted: #a1a1aa;
   color-scheme: dark;
 }
 
@@ -111,7 +109,7 @@ textarea:focus {
 }
 
 .markdown-body a {
-  color: #3b82f6;
+  color: var(--color-primary);
   text-decoration: none;
 }
 
@@ -220,39 +218,6 @@ textarea:focus {
   border: 0;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-  cursor: default;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-scrollbar);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-scrollbar-hover);
-}
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
-
 /* Modal Animations */
 @keyframes backdrop-fade {
   from {
@@ -275,6 +240,39 @@ textarea:focus {
     opacity: 1;
     transform: translateY(0) translateZ(0);
   }
+}
+
+/* Sleek, thin, borderless scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+
+/* Hide scrollbar on specific elements */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .animate-backdrop {

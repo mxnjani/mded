@@ -15,26 +15,15 @@
     width: 32px;
     height: 32px;
     border-radius: 6px;
-    border: 1px solid color-mix(in srgb, var(--color-accent) 40%, transparent);
-    background: var(--color-bg);
-    color: var(--color-muted);
+    border: 1px solid transparent;
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s;
-    opacity: 0.6;
-}
-
-.floating-toc-trigger:hover {
-    opacity: 1;
-    color: var(--color-accent);
-    border-color: var(--color-accent);
 }
 
 .floating-toc-trigger.active {
-    opacity: 1;
-    color: var(--color-accent);
-    border-color: var(--color-accent);
-    background: var(--color-editor-bg);
-    border-width: 1.5px;
+    color: #3b82f6;
+    border-color: color-mix(in srgb, #3b82f6 30%, transparent);
+    background: color-mix(in srgb, #3b82f6 10%, transparent);
 }
 
 /* ---------- Panel ---------- */
@@ -47,11 +36,11 @@
     width: 260px;
     max-height: calc(100% - 80px);
     overflow-y: auto;
-    border: 1.5px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     background: var(--color-bg);
     padding: 8px 0;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 
     /* Animate in/out */
     opacity: 0;
@@ -80,12 +69,12 @@
 
 .floating-toc-item {
     display: block;
-    width: 100%;
+    width: calc(100% - 16px);
+    margin: 2px 8px;
+    border-radius: 6px;
     text-align: left;
-    padding: 5px 14px;
-    border: none;
-    background: transparent;
-    color: var(--color-muted);
+    padding: 6px 10px;
+    border: 1px solid transparent;
     font-size: 13px;
     line-height: 1.4;
     cursor: pointer;
@@ -96,28 +85,23 @@
     font-family: var(--font-sans);
 }
 
-.floating-toc-item:hover {
-    color: var(--color-accent);
-    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
-}
-
 /* Indent levels */
 .floating-toc-item[data-level="2"] {
-    padding-left: 28px;
+    padding-left: 24px;
 }
 
 .floating-toc-item[data-level="3"] {
-    padding-left: 42px;
+    padding-left: 38px;
 }
 
 .floating-toc-item[data-level="4"] {
-    padding-left: 56px;
+    padding-left: 52px;
 }
 
 .floating-toc-item[data-level="5"] {
-    padding-left: 70px;
+    padding-left: 66px;
 }
 
 .floating-toc-item[data-level="6"] {
-    padding-left: 84px;
+    padding-left: 80px;
 }

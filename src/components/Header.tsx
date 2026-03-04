@@ -7,7 +7,7 @@ import { ToolbarButton } from './ToolbarButton';
 import { ShortcutDialog } from './ShortcutDialog';
 import { InsertMediaDialog } from './InsertMediaDialog';
 import { RecentFilesDialog } from './RecentFilesDialog';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMarkdownEditor } from '../hooks/useMarkdownEditor';
 import { insertCodeBlock, isTauri } from '../utils';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -44,6 +44,41 @@ export function Header({
         openRecentFile
     } = editorState;
 
+    const scrollRef = useRef<HTMLElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        if (scrollRef.current) {
+            setStartX(e.pageX - scrollRef.current.offsetLeft);
+            setScrollLeft(scrollRef.current.scrollLeft);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !scrollRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        scrollRef.current.scrollLeft = scrollLeft - walk;
+    };
+
+    const handleWheel = (e: React.WheelEvent) => {
+        if (scrollRef.current && e.deltaY !== 0) {
+            scrollRef.current.scrollLeft += e.deltaY;
+        }
+    };
+
     const { openModal, closeModal } = useModal();
 
     const openMediaDialog = () => openModal(
@@ -67,6 +102,7 @@ export function Header({
             onClose={closeModal}
             recentFiles={recentFiles}
             onOpenRecent={openRecentFile}
+            onClearRecent={editorState.clearRecentFiles}
         />
     );
 
@@ -93,8 +129,16 @@ export function Header({
     }, [openModal, closeModal, recentFiles, openRecentFile, filePath, insertTextWithHistory, editorRef]);
 
     return (
-        <header className="h-11 border-b border-border bg-editor-bg flex items-center justify-between px-4 shrink-0 z-30 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1 min-w-max text-accent">
+        <header
+            ref={scrollRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            onWheel={handleWheel}
+            className={`h-11 border-b border-border bg-editor-bg flex items-center justify-between px-4 shrink-0 z-30 overflow-x-auto no-scrollbar scroll-smooth ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
+        >
+            <div className="flex items-center gap-1 min-w-max text-accent pointer-events-auto">
                 <div className="flex items-center gap-0.5">
                     <ToolbarButton onClick={handleNewFile} icon={<Plus size={14} />} title="New (Ctrl+N)" />
                     <ToolbarButton onClick={() => {
@@ -108,7 +152,7 @@ export function Header({
                     <div className="relative">
                         <ToolbarButton onClick={handleSave} icon={<Save size={14} />} title="Save (Ctrl+S)" />
                         {isDirty && (
-                            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-primary rounded-full" />
                         )}
                     </div>
                     <ToolbarButton onClick={handleSaveAs} icon={<SaveAll size={14} />} title="Save As (Ctrl+Shift+S)" />
@@ -150,21 +194,21 @@ export function Header({
                         onClick={() => setViewMode('editor')}
                         icon={<Pencil size={12} />}
                         title="Editor (Alt+1)"
-                        className="w-7.5 h-6.5 rounded-none border-none ring-0"
+                        className="w-7 h-7 rounded-none border-none ring-0"
                     />
                     <ToolbarButton
                         active={viewMode === 'split'}
                         onClick={() => setViewMode('split')}
                         icon={<Columns2 size={12} />}
                         title="Split (Alt+2)"
-                        className="w-7.5 h-6.5 rounded-none border-none ring-0"
+                        className="w-7 h-7 rounded-none border-none ring-0"
                     />
                     <ToolbarButton
                         active={viewMode === 'preview'}
                         onClick={() => setViewMode('preview')}
                         icon={<View size={12} />}
                         title="Preview (Alt+3)"
-                        className="w-7.5 h-6.5 rounded-none border-none ring-0"
+                        className="w-7 h-7 rounded-none border-none ring-0"
                     />
                 </div>
 
@@ -172,7 +216,7 @@ export function Header({
                     <ToolbarButton
                         onClick={() => setIsDarkMode(!isDarkMode)}
                         icon={isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
-                        title={isDarkMode ? "Light Mode" : "Dark Mode"}
+                        title={isDarkMode ? "Light Mode (Ctrl+Shift+D)" : "Dark Mode (Ctrl+Shift+D)"}
                     />
                     <ToolbarButton
                         onClick={() => {

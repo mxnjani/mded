@@ -80,6 +80,11 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         });
     }, []);
 
+    const clearRecentFiles = useCallback(() => {
+        setRecentFiles([]);
+        localStorage.removeItem('mded_recent_files');
+    }, []);
+
     const { push: pushToHistory, undo, redo, reset: resetHistory, nextCursorRef, lastValue } = useHistory({
         onRestore: (md) => {
             setMarkdown(md);
@@ -191,7 +196,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         } else {
             document.documentElement.classList.remove('dark');
         }
-        
+
         // Dynamically update the OS title window theme when toggled at runtime
         if (isTauri()) {
             invoke('set_native_theme', { isDarkMode }).catch(console.error);
@@ -530,5 +535,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         handleImagePaste,
         recentFiles,
         openRecentFile,
+        clearRecentFiles,
     };
 }

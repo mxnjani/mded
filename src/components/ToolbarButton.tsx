@@ -15,9 +15,9 @@ export function ToolbarButton({ onClick, icon, title, active, className }: Toolb
             tabIndex={-1}
             onClick={onClick}
             className={cn(
-                "h-7 px-1.5 rounded transition-colors flex items-center justify-center text-muted focus:outline-none focus:ring-0",
+                "w-7 h-7 rounded transition-colors flex items-center justify-center text-muted focus:outline-none focus:ring-0",
                 active
-                    ? "text-blue-500 bg-transparent"
+                    ? "text-primary bg-transparent"
                     : "hover:text-accent hover:bg-accent/10 focus-visible:outline-none",
                 className
             )}

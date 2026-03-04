@@ -61,15 +61,30 @@ export const FloatingToc = React.memo(function FloatingToc({
                 scrollContainer.scrollTo({ top: offset, behavior: 'smooth' });
             }
         },
-        [previewRef, containerRef],
+        [previewRef, containerRef]
     );
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
+                e.preventDefault();
+                toggle();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [toggle]);
 
     if (headings.length === 0) return null;
 
     return (
         <>
             <button
-                className={`floating-toc-trigger${isOpen ? ' active' : ''}`}
+                className={`floating-toc-trigger ${isOpen
+                    ? 'active text-primary bg-primary/10 border-primary/30'
+                    : 'text-muted hover:text-accent hover:bg-accent/10 bg-transparent'
+                    }`}
                 onClick={toggle}
                 title="Table of Contents"
             >
@@ -81,7 +96,7 @@ export const FloatingToc = React.memo(function FloatingToc({
                 {headings.map((h) => (
                     <button
                         key={h.id}
-                        className="floating-toc-item"
+                        className="floating-toc-item text-muted hover:text-accent hover:bg-accent/10 bg-transparent"
                         data-level={h.level}
                         onClick={() => scrollTo(h.id)}
                         title={h.text}

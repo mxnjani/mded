@@ -28,7 +28,7 @@ const shortcuts = [
             { keys: 'Ctrl+L', label: 'Bullet list' },
             { keys: 'Ctrl+Shift+L', label: 'Ordered list' },
             { keys: 'Ctrl+Shift+T', label: 'Task list' },
-            { keys: 'Ctrl+Shift+H', label: 'Horizontal rule' },
+            { keys: 'Ctrl+H', label: 'Horizontal rule' },
         ]
     },
     {
@@ -36,6 +36,8 @@ const shortcuts = [
             { keys: 'Alt+1', label: 'Editor only' },
             { keys: 'Alt+2', label: 'Split view' },
             { keys: 'Alt+3', label: 'Preview only' },
+            { keys: 'Ctrl+T', label: 'Table of Contents' },
+            { keys: 'Ctrl+Shift+D', label: 'Toggle Dark Mode' },
             { keys: 'F11', label: 'Fullscreen' },
             { keys: 'Ctrl+/', label: 'Shortcuts Help' },
         ]
