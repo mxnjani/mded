@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { Dialog } from './Dialog';
 
 interface ConfirmDialogProps {
-    isOpen: boolean;
+    isOpen?: boolean;
     title: string;
     message: string;
     confirmLabel: string;
@@ -13,7 +12,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
-    isOpen,
+    isOpen = true,
     title,
     message,
     confirmLabel,
@@ -22,52 +21,38 @@ export function ConfirmDialog({
     onConfirm,
     onCancel,
 }: ConfirmDialogProps) {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-        return () => setMounted(false);
-    }, []);
-
-    if (!isOpen || !mounted) return null;
-
     const confirmClass = variant === 'danger'
         ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 hover:border-red-500/30'
         : 'bg-accent/10 text-accent hover:bg-accent/20 border-accent/20 hover:border-accent/30';
 
-    return createPortal(
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm animate-backdrop">
-            <div className="bg-bg border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden w-full max-w-sm mx-4 animate-modal-show transform-gpu antialiased">
+    const footer = (
+        <>
+            <button
+                onClick={onCancel}
+                className="px-4 py-2 hover:bg-border/50 text-accent/90 rounded-md transition-colors font-medium border border-transparent hover:border-border/50"
+            >
+                {cancelLabel}
+            </button>
+            <button
+                onClick={onConfirm}
+                className={`px-4 py-2 border rounded-md transition-all font-medium shadow-sm ${confirmClass}`}
+            >
+                {confirmLabel}
+            </button>
+        </>
+    );
 
-                {/* Header */}
-                <div className="px-6 py-5 border-b border-border bg-bg/50">
-                    <h2 className="text-xl font-semibold text-accent m-0">
-                        {title}
-                    </h2>
-                </div>
-
-                {/* Body */}
-                <div className="px-6 py-5 text-accent/80 text-base leading-relaxed">
-                    {message}
-                </div>
-
-                {/* Footer */}
-                <div className="px-6 py-4 bg-bg/50 border-t border-border flex justify-end gap-3 rounded-b-xl">
-                    <button
-                        onClick={onCancel}
-                        className="px-4 py-2 hover:bg-border/50 text-accent/90 rounded-md transition-colors font-medium border border-transparent hover:border-border/50"
-                    >
-                        {cancelLabel}
-                    </button>
-                    <button
-                        onClick={onConfirm}
-                        className={`px-4 py-2 border rounded-md transition-all font-medium shadow-sm ${confirmClass}`}
-                    >
-                        {confirmLabel}
-                    </button>
-                </div>
+    return (
+        <Dialog
+            isOpen={isOpen}
+            onClose={onCancel}
+            title={title}
+            className="sm:max-w-sm"
+            footer={footer}
+        >
+            <div className="text-accent/80 text-base leading-relaxed">
+                {message}
             </div>
-        </div>,
-        document.body
+        </Dialog>
     );
 }

@@ -1,10 +1,11 @@
-import { useRef, useEffect, useDeferredValue, useState, useCallback } from 'react';
+import { useRef, useEffect, useDeferredValue, useCallback } from 'react';
 import { Header } from './components/Header';
 import { Editor } from './components/Editor';
 import { Preview } from './components/Preview';
 import { useMarkdownEditor } from './hooks/useMarkdownEditor';
 import { cn, insertCodeBlock, isTauri } from './utils';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { useModal } from './contexts/ModalContext';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -15,8 +16,8 @@ export default function App() {
   const previewRef = useRef<HTMLDivElement>(null);
 
   const editorState = useMarkdownEditor(editorRef);
-  const { markdown, fileName, viewMode, isDirty, showCloseConfirm, showNewFileConfirm, showOpenFileConfirm, confirmNewFile, confirmOpenFile } = editorState;
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const { markdown, fileName, viewMode, isDirty } = editorState;
+  const { openModal, closeModal } = useModal();
 
   const insertTextWithHistory = useCallback((before: string, after: string = '') => {
     let actualBefore = before;
@@ -84,11 +85,6 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
         e.preventDefault();
-      }
-
-      if (e.key === '/' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        setShowShortcuts(v => !v);
       }
 
       if (!import.meta.env.DEV) {
@@ -197,7 +193,20 @@ export default function App() {
     if (isTauri()) {
       const unlistenPromise = listen('close-requested', async () => {
         if (isDirtyRef.current) {
-          editorState.setShowCloseConfirm(true);
+          openModal(
+            <ConfirmDialog
+              title="Unsaved Changes"
+              message="Close without saving?"
+              confirmLabel="Close without saving"
+              variant="danger"
+              onConfirm={async () => {
+                if (isTauri()) {
+                  await invoke('close_app');
+                }
+              }}
+              onCancel={closeModal}
+            />
+          );
         } else {
           await invoke('close_app');
         }
@@ -217,7 +226,7 @@ export default function App() {
         window.removeEventListener('beforeunload', handleBeforeUnload);
       };
     }
-  }, [editorState.setShowCloseConfirm]);
+  }, [openModal, closeModal]);
 
   return (
     <div
@@ -238,8 +247,6 @@ export default function App() {
         insertTextWithHistory={insertTextWithHistory}
         fileInputRef={fileInputRef}
         editorRef={editorRef}
-        showShortcuts={showShortcuts}
-        setShowShortcuts={setShowShortcuts}
       />
 
       <main className={cn(
@@ -278,40 +285,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      <ConfirmDialog
-        isOpen={showCloseConfirm}
-        title="Unsaved Changes"
-        message="Close without saving?"
-        confirmLabel="Close without saving"
-        variant="danger"
-        onConfirm={async () => {
-          if (isTauri()) {
-            await invoke('close_app');
-          }
-        }}
-        onCancel={() => editorState.setShowCloseConfirm(false)}
-      />
-
-      <ConfirmDialog
-        isOpen={showNewFileConfirm}
-        title="New File"
-        message="Start a new file? Unsaved changes will be lost."
-        confirmLabel="Discard & New"
-        variant="danger"
-        onConfirm={confirmNewFile}
-        onCancel={() => editorState.setShowNewFileConfirm(false)}
-      />
-
-      <ConfirmDialog
-        isOpen={showOpenFileConfirm}
-        title="Unsaved Changes"
-        message="Open a new file? Unsaved changes in the current file will be lost."
-        confirmLabel="Discard & Open"
-        variant="danger"
-        onConfirm={confirmOpenFile}
-        onCancel={() => editorState.setShowOpenFileConfirm(false)}
-      />
     </div>
   );
 }

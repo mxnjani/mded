@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Image as ImageIcon, Link2, FileWarning, X, FolderSearch, RefreshCw } from 'lucide-react';
+import { Image as ImageIcon, Link2, FileWarning, FolderSearch, RefreshCw } from 'lucide-react';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { isTauri } from '../utils';
 import { relativePath, getDirname } from '../utils/path';
+import { Dialog } from './Dialog';
 
 interface InsertMediaDialogProps {
-    isOpen: boolean;
     onClose: () => void;
-    onInsert: (text: string) => void;
+    onInsert: (markdown: string) => void;
     currentFilePath: string | null;
 }
 
@@ -18,7 +18,7 @@ function isImageUrl(url: string): boolean {
         /\.(png|jpe?g|gif|svg|webp|avif|bmp|ico)(\?.*)?$/.test(lower);
 }
 
-export function InsertMediaDialog({ isOpen, onClose, onInsert, currentFilePath }: InsertMediaDialogProps) {
+export function InsertMediaDialog({ onClose, onInsert, currentFilePath }: InsertMediaDialogProps) {
     const [url, setUrl] = useState('');
     const [altText, setAltText] = useState('');
     const [isImage, setIsImage] = useState(false);
@@ -28,8 +28,6 @@ export function InsertMediaDialog({ isOpen, onClose, onInsert, currentFilePath }
     useEffect(() => {
         setIsImage(isImageUrl(url));
     }, [url]);
-
-    if (!isOpen) return null;
 
     const handleCheckLink = async () => {
         if (!url || !url.startsWith('http')) return;
@@ -116,21 +114,17 @@ export function InsertMediaDialog({ isOpen, onClose, onInsert, currentFilePath }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-editor-bg border border-border rounded-lg shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in duration-200">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-medium text-accent flex items-center gap-2">
-                        {isImage ? <ImageIcon size={18} /> : <Link2 size={18} />}
-                        Insert Link and Media
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="p-1 rounded-md text-accent/70 hover:text-accent hover:bg-border/50 transition-colors cursor-pointer"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-
+        <Dialog
+            isOpen={true}
+            onClose={onClose}
+            title={
+                <>
+                    {isImage ? <ImageIcon size={18} /> : <Link2 size={18} />}
+                    Insert Link and Media
+                </>
+            }
+        >
+            <div className="animate-in fade-in zoom-in duration-200">
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-accent/80 mb-1">
@@ -213,6 +207,6 @@ export function InsertMediaDialog({ isOpen, onClose, onInsert, currentFilePath }
                     </button>
                 </div>
             </div>
-        </div>
+        </Dialog>
     );
 }

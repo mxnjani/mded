@@ -1,7 +1,6 @@
 import { Dialog } from './Dialog';
 
 interface ShortcutDialogProps {
-    isOpen: boolean;
     onClose: () => void;
 }
 
@@ -44,9 +43,9 @@ const shortcuts = [
 ];
 
 
-export function ShortcutDialog({ isOpen, onClose }: ShortcutDialogProps) {
+export function ShortcutDialog({ onClose }: ShortcutDialogProps) {
     return (
-        <Dialog isOpen={isOpen} onClose={onClose} title="Keyboard Shortcuts">
+        <Dialog isOpen={true} onClose={onClose} title="Keyboard Shortcuts">
             <div className="space-y-5">
                 {shortcuts.map((group) => (
                     <div key={group.category}>

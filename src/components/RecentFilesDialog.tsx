@@ -1,17 +1,14 @@
 import { Dialog } from './Dialog';
 
 interface RecentFilesDialogProps {
-    isOpen: boolean;
     onClose: () => void;
     recentFiles: { path: string; name: string }[];
     onOpenRecent: (path: string) => void;
 }
 
-export function RecentFilesDialog({ isOpen, onClose, recentFiles, onOpenRecent }: RecentFilesDialogProps) {
-    if (!isOpen) return null;
-
+export function RecentFilesDialog({ onClose, recentFiles, onOpenRecent }: RecentFilesDialogProps) {
     return (
-        <Dialog isOpen={isOpen} onClose={onClose} title="Recent Files" className="sm:max-w-[500px]">
+        <Dialog isOpen={true} onClose={onClose} title="Recent Files" className="sm:max-w-[500px]">
             {recentFiles.length === 0 ? (
                 <div className="text-center py-8 text-accent/50 space-y-2">
                     <p className="text-sm">No recent files yet</p>

@@ -7,15 +7,12 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { useHistory } from './useHistory';
 import { isTauri } from '../utils';
+import { useModal } from '../contexts/ModalContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 export type ViewMode = 'editor' | 'split' | 'preview';
 
-interface PendingOpenFile {
-    type: 'tauri' | 'web';
-    path?: string;
-    file?: File;
-    content?: string;
-}
+
 
 const DEFAULT_MARKDOWN = `# New Document
 
@@ -39,10 +36,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
     const isDirty = markdown !== originalMarkdown;
     const [viewMode, setViewMode] = useState<ViewMode>('editor');
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-    const [showNewFileConfirm, setShowNewFileConfirm] = useState(false);
-    const [showOpenFileConfirm, setShowOpenFileConfirm] = useState(false);
-    const [pendingOpenFile, setPendingOpenFile] = useState<PendingOpenFile | null>(null);
+    const { openModal, closeModal } = useModal();
 
     const [recentFiles, setRecentFiles] = useState<{ path: string, name: string }[]>(() => {
         if (typeof window !== 'undefined') {
@@ -278,7 +272,23 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
 
     const handleNewFile = useCallback(() => {
         if (isDirty) {
-            setShowNewFileConfirm(true);
+            openModal(
+                React.createElement(ConfirmDialog, {
+                    title: "New File",
+                    message: "Start a new file? Unsaved changes will be lost.",
+                    confirmLabel: "Discard & New",
+                    variant: "danger",
+                    onConfirm: () => {
+                        setMarkdown(DEFAULT_MARKDOWN);
+                        setOriginalMarkdown(DEFAULT_MARKDOWN);
+                        resetHistory(DEFAULT_MARKDOWN);
+                        setFileName('untitled.md');
+                        setFilePath(null);
+                        closeModal();
+                    },
+                    onCancel: closeModal
+                })
+            );
         } else {
             setMarkdown(DEFAULT_MARKDOWN);
             setOriginalMarkdown(DEFAULT_MARKDOWN);
@@ -287,15 +297,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             setFilePath(null);
         }
     }, [isDirty, resetHistory]);
-
-    const confirmNewFile = useCallback(() => {
-        setMarkdown(DEFAULT_MARKDOWN);
-        setOriginalMarkdown(DEFAULT_MARKDOWN);
-        resetHistory(DEFAULT_MARKDOWN);
-        setFileName('untitled.md');
-        setFilePath(null);
-        setShowNewFileConfirm(false);
-    }, [resetHistory]);
 
     const loadFile = useCallback((file: File) => {
         const reader = new FileReader();
@@ -309,18 +310,27 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         reader.readAsText(file);
     }, [resetHistory]);
 
-    const confirmOpenFile = useCallback(() => {
-        if (!pendingOpenFile) return;
-
-        if (pendingOpenFile.type === 'tauri' && pendingOpenFile.content && pendingOpenFile.path) {
-            applyFileContent(pendingOpenFile.content, pendingOpenFile.path);
-        } else if (pendingOpenFile.type === 'web' && pendingOpenFile.file) {
-            loadFile(pendingOpenFile.file);
+    const confirmOpenFile = useCallback((type: 'tauri' | 'web', path?: string, content?: string, file?: File) => {
+        if (type === 'tauri' && content && path) {
+            applyFileContent(content, path);
+        } else if (type === 'web' && file) {
+            loadFile(file);
         }
+        closeModal();
+    }, [loadFile, applyFileContent, closeModal]);
 
-        setShowOpenFileConfirm(false);
-        setPendingOpenFile(null);
-    }, [pendingOpenFile, loadFile, applyFileContent]);
+    const requestOpenFile = useCallback((type: 'tauri' | 'web', path?: string, content?: string, file?: File) => {
+        openModal(
+            React.createElement(ConfirmDialog, {
+                title: "Unsaved Changes",
+                message: "Open a new file? Unsaved changes in the current file will be lost.",
+                confirmLabel: "Discard & Open",
+                variant: "danger",
+                onConfirm: () => confirmOpenFile(type, path, content, file),
+                onCancel: closeModal
+            })
+        );
+    }, [openModal, closeModal, confirmOpenFile]);
 
     const handleFileOpen = useCallback(async (e?: React.ChangeEvent<HTMLInputElement>) => {
         if (isTauri()) {
@@ -335,8 +345,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                     const content = await readTextFile(openPath);
 
                     if (isDirtyRef.current) {
-                        setPendingOpenFile({ type: 'tauri', path: openPath, content });
-                        setShowOpenFileConfirm(true);
+                        requestOpenFile('tauri', openPath, content);
                     } else {
                         applyFileContent(content, openPath);
                     }
@@ -349,8 +358,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             if (!file) return;
 
             if (isDirtyRef.current) {
-                setPendingOpenFile({ type: 'web', file });
-                setShowOpenFileConfirm(true);
+                requestOpenFile('web', undefined, undefined, file);
             } else {
                 loadFile(file);
             }
@@ -359,35 +367,33 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                 e.target.value = '';
             }
         }
-    }, [loadFile, applyFileContent]);
+    }, [loadFile, applyFileContent, requestOpenFile]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         const file = e.dataTransfer.files[0];
         if (file && (file.name.endsWith('.md') || file.name.endsWith('.markdown') || file.name.endsWith('.txt'))) {
             if (isDirtyRef.current) {
-                setPendingOpenFile({ type: 'web', file });
-                setShowOpenFileConfirm(true);
+                requestOpenFile('web', undefined, undefined, file);
             } else {
                 loadFile(file);
             }
         }
-    }, [loadFile]);
+    }, [loadFile, requestOpenFile]);
 
     const openRecentFile = useCallback(async (path: string) => {
         if (!isTauri()) return;
         try {
             const content = await readTextFile(path);
             if (isDirtyRef.current) {
-                setPendingOpenFile({ type: 'tauri', path, content });
-                setShowOpenFileConfirm(true);
+                requestOpenFile('tauri', path, content);
             } else {
                 applyFileContent(content, path);
             }
         } catch (err) {
             console.error("Failed to open recent file:", err);
         }
-    }, [applyFileContent]);
+    }, [applyFileContent, requestOpenFile]);
 
     // Tauri: listen for open-file events and native drag-drop
     useEffect(() => {
@@ -400,8 +406,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             try {
                 const content = await readTextFile(openFilePath);
                 if (isDirtyRef.current) {
-                    setPendingOpenFile({ type: 'tauri', path: openFilePath, content });
-                    setShowOpenFileConfirm(true);
+                    requestOpenFile('tauri', openFilePath, content);
                 } else {
                     applyFileContent(content, openFilePath);
                 }
@@ -420,8 +425,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
                     try {
                         const content = await readTextFile(droppedPath);
                         if (isDirtyRef.current) {
-                            setPendingOpenFile({ type: 'tauri', path: droppedPath, content });
-                            setShowOpenFileConfirm(true);
+                            requestOpenFile('tauri', droppedPath, content);
                         } else {
                             applyFileContent(content, droppedPath);
                         }
@@ -436,7 +440,7 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
             unlistenPromise.then(unlisten => unlisten());
             unlistenDropPromise.then(unlisten => unlisten());
         };
-    }, [applyFileContent]);
+    }, [applyFileContent, requestOpenFile]);
 
     // Global keyboard shortcuts: file ops, view mode, fullscreen
     useEffect(() => {
@@ -503,14 +507,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         setIsDarkMode,
         isFullscreen,
         setIsFullscreen,
-        showCloseConfirm,
-        setShowCloseConfirm,
-        showNewFileConfirm,
-        setShowNewFileConfirm,
-        showOpenFileConfirm,
-        setShowOpenFileConfirm,
-        confirmNewFile,
-        confirmOpenFile,
         handleNewFile,
         handleFileOpen,
         handleDrop,

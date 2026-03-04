@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface DialogProps {
-    isOpen: boolean;
+    isOpen?: boolean;
     onClose: () => void;
     title: string | React.ReactNode;
     children: React.ReactNode;
     className?: string;
+    footer?: React.ReactNode;
 }
 
-export function Dialog({ isOpen, onClose, title, children, className = '' }: DialogProps) {
+export function Dialog({ isOpen = true, onClose, title, children, className = '', footer }: DialogProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -52,6 +53,13 @@ export function Dialog({ isOpen, onClose, title, children, className = '' }: Dia
                 <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
                     {children}
                 </div>
+
+                {/* Footer */}
+                {footer && (
+                    <div className="px-6 py-4 bg-bg/50 border-t border-border flex justify-end gap-3 mt-auto">
+                        {footer}
+                    </div>
+                )}
             </div>
         </div>,
         document.body
