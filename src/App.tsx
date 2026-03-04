@@ -38,11 +38,19 @@ export default function App() {
 
   const deferredMarkdown = useDeferredValue(markdown);
 
-  // Startup: Stay hidden until React UI is ready, then show natively maximized
+  // Startup: Stay hidden until React UI is ready and painted, then show natively maximized
   useEffect(() => {
     if (isTauri()) {
-      invoke('show_maximized_native').catch(console.error);
-      getCurrentWindow().setFocus().catch(console.error);
+      // Double requestAnimationFrame ensures the browser has calculated layout AND painted the frame
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // A tiny timeout gives the OS WebView compositor a moment to catch up
+          setTimeout(() => {
+            invoke('show_maximized_native').catch(console.error);
+            getCurrentWindow().setFocus().catch(console.error);
+          }, 50);
+        });
+      });
     }
   }, []);
 

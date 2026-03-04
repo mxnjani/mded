@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, RefObject } from 'react';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile, writeTextFile, writeFile } from '@tauri-apps/plugin-fs';
+import { dirname, join } from '@tauri-apps/api/path';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -110,9 +111,6 @@ export function useMarkdownEditor(editorRef: RefObject<HTMLTextAreaElement | nul
         }
 
         try {
-            const { writeFile } = await import('@tauri-apps/plugin-fs');
-            const { dirname, join } = await import('@tauri-apps/api/path');
-
             const currentDir = await dirname(filePath);
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const extension = file.type.split('/')[1] || 'png';
